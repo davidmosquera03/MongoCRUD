@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from config.db import conn
-from schemas.user import usuarioEntity,usuariosEntity,autorEntity,autoresEntity
-from models.user import User,Usuario,Prestamo,Libro,Copia,Edicion,Autor,Autorear
+from schemas.user import usuarioEntity,usuariosEntity,autorEntity,autoresEntity,libroEntity,librosEntity
+from models.user import Usuario,Prestamo,Libro,Copia,Edicion,Autor,Autorear
 from bson import ObjectId
 
 # define rutas
@@ -14,20 +14,32 @@ lib = APIRouter()
 def find_all_users():
     return usuariosEntity(conn.biblioteca.usuario.find())
 
-@lib.get('/users/{id}')
+@lib.get('/users/{rut}')
 def find_user(rut:str):
      return usuarioEntity(conn.biblioteca.usuario.find_one(
          {"rut": rut})
          )
 
-@lib.get('/authors')
-def find_all_authors(nombre):
-    return usuariosEntity(conn.biblioteca.usuario.find())
 
-@lib.get('/authors/{id}')
-def find_author(rut:str):
-     return autorEntity(conn.biblioteca.usuario.find_one(
-         {"rut": rut})
+@lib.get('/books')
+def find_all_books():
+    return libroEntity(conn.biblioteca.libro.find())
+
+@lib.get('/books/{titulo}')
+def find_book(titulo:str):
+     return libroEntity(conn.biblioteca.libro.find_one(
+         {"titulo": titulo})
+         )
+
+
+@lib.get('/authors')
+def find_all_authors():
+    return autoresEntity(conn.biblioteca.autor.find())
+
+@lib.get('/authors/{nombre}')
+def find_author(nombre:str):
+     return autorEntity(conn.biblioteca.autor.find_one(
+         {"nombre": nombre})
          )
 
 
@@ -40,13 +52,19 @@ def create_user(usuario:Usuario):
     creado = conn.biblioteca.usuario.find_one({"rut":new_user["rut"]})
     return usuarioEntity(creado)
 
-@lib.post('/users')
+@lib.post('/authors')
 def create_autor(autor:Autor):
     new = dict(autor)
     conn.biblioteca.autor.insert_one(new)
-    creado = conn.biblioteca.autor.find_one({"rut":new["rut"]})
-    return usuarioEntity(creado)
+    creado = conn.biblioteca.autor.find_one({"nombre":new["nombre"]})
+    return autorEntity(creado)
 
+@lib.post('/books')
+def create_book(libro:Libro):
+    new = dict(libro)
+    conn.biblioteca.libro.insert_one(new)
+    creado = conn.biblioteca.libro.find_one({"titulo":new["titulo"]})
+    return libroEntity(creado)
 
 #PUTs Actualizar
 
@@ -56,6 +74,10 @@ def delete_user(rut:str):
     conn.biblioteca.usuario.delete_one({"rut":rut})
     return f"deleted {rut}"
 
+@lib.delete('/authors/{nombre}')
+def delete_author(nombre:str):
+    conn.biblioteca.autor.delete_one({"nombre":nombre})
+    return f"deleted {nombre}"
 
 
 """ #update

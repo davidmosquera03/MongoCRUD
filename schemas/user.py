@@ -13,7 +13,8 @@ def autorEntity(item)-> dict:
 
 def libroEntity(item)-> dict:
     return {
-        "nombre":item["nombre"]
+        "titulo":item["titulo"],
+        "isbn":item["isbn"]
     }
 
 #Devolver collection

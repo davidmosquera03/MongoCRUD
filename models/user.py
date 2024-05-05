@@ -2,11 +2,11 @@ from typing import Optional
 from pydantic import BaseModel
 
 #Incluye los modelos de cada collección
-class User(BaseModel):
+""" class User(BaseModel):
     id:Optional[str]=None
     name:str
     email:str
-    password:str
+    password:str """
 
 class Usuario(BaseModel):
     rut:str
