@@ -17,6 +17,26 @@ def libroEntity(item)-> dict:
         "isbn":item["isbn"]
     }
 
+def edicionEntity(item)->dict:
+    return {
+        "isbn":item["isbn"],
+        "anyo":item["anyo"],
+        "idioma":item["idioma"]
+    }
+def copiaEntity(item)->dict:
+    return {
+        "numero":item["numero"],
+        "isbn":item["isbn"]
+    }
+
+def prestamoEntity(item)->dict:
+    return {
+        "numero": item["numero"],
+        "isbn": item["isbn"],
+        "rut": item["rut"],
+        "fecha_dev": item["fecha_dev"],
+        "fecha_pres":item["fecha_pres"],
+    }
 #Devolver collection
 def usuariosEntity(entity)->list:
     return [usuarioEntity(item) for item in entity]
@@ -26,3 +46,12 @@ def autoresEntity(entity)->list:
 
 def librosEntity(entity)->list:
     return [libroEntity(item) for item in entity]
+
+def edicionesEntity(entity)->list:
+    return [edicionEntity(item) for item in entity]
+
+def copiasEntity(entity)->list:
+    return [copiaEntity(item) for item in entity]
+
+def prestamosEntity(entity)->list:
+     return [prestamosEntity(item) for item in entity]
