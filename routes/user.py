@@ -130,9 +130,43 @@ def update_author(nombre:str,autor:Autor):
         "nombre":nombre
     },  {"$set": dict(autor)}
     )
-    return  usuarioEntity(conn.biblioteca.autor.find_one({"autor":autor.nombre}))
+    return  usuarioEntity(conn.biblioteca.autor.find_one({"nombre":autor.nombre}))
 
+@lib.put('/books/{titulo}',tags=["Libros"])
+def update_book(titulo:str,libro:Libro):
+    conn.biblioteca.libro.find_one_and_update({
+        "titulo":titulo
+    },  {"$set": dict(libro)}
+    )
+    return  usuarioEntity(conn.biblioteca.libro.find_one({"titulo":libro.titulo}))
 
+@lib.post('/editions/{isbn}',tags=["Ediciones"])
+def update_edition(isbn:str,edicion:Edicion):
+    conn.biblioteca.edicion.find_one_and_update({
+        "isbn":isbn
+    },  {"$set": dict(edicion)}
+    )
+    return  usuarioEntity(conn.biblioteca.edicion.find_one({"isbn":edicion.isbn}))
+
+@lib.post('/copies/{isbn}/{numero}',tags=["Copias"])
+def update_copy(isbn:str,numero:int,copia:Copia):
+    conn.biblioteca.copia.find_one_and_update({
+        "isbn":isbn,
+        "numero":numero
+    },  {"$set": dict(copia)}
+    )
+    return  usuarioEntity(conn.biblioteca.copia.find_one({"isbn":copia.isbn,"numero":copia.numero}))
+
+@lib.post('/copies/{isbn}/{numero}/{rut}',tags=["Copias"])
+def update_loan(isbn:str,numero:int,rut:str,prestamo:Prestamo):
+    conn.biblioteca.prestamo.find_one_and_update({
+        "isbn":isbn,
+        "numero":numero,
+        "rut":rut
+    },  {"$set": dict(prestamo)}
+    )
+    return  usuarioEntity(conn.biblioteca.prestamo.find_one(
+        {"isbn":prestamo.isbn,"numero":prestamo.numero,"rut":prestamo.rut}))
 
 #DELETEs Borrar
 @lib.delete('/users/{rut}',tags=["Usuarios"])
@@ -164,6 +198,8 @@ def delete_copy(isbn:str,numero:int):
 def delete_copy(isbn:str,numero:int,rut:str):
     conn.biblioteca.prestamo.delete_one({"isbn":isbn,"numero":numero,"rut":rut})
     return f"deleted {isbn}/{numero}/{rut}"
+
+
 
 """ #update
 @user.put('/users({id})')
