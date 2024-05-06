@@ -54,4 +54,4 @@ def copiasEntity(entity)->list:
     return [copiaEntity(item) for item in entity]
 
 def prestamosEntity(entity)->list:
-     return [prestamosEntity(item) for item in entity]
+     return [prestamoEntity(item) for item in entity]

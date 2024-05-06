@@ -59,6 +59,18 @@ def find_copy(isbn:str,numero:int):
      return copiaEntity(conn.biblioteca.copia.find_one(
          {"isbn": isbn,"numero":numero})
          )
+
+@lib.get('/loans',tags=["Prestamos"])
+def find_all_loans():
+    return prestamosEntity(conn.biblioteca.prestamo.find())
+
+@lib.get('/loans/{isbn}/{num}/{rut}',tags=["Prestamos"])
+def find_loan(isbn:str,numero:int,rut:str):
+     return prestamoEntity(conn.biblioteca.prestamo.find_one(
+         {"isbn": isbn,"numero":numero,"rut":rut})
+         )
+
+
 #POSTs Insertar
 
 @lib.post('/users',tags=["Usuarios"])
@@ -95,7 +107,32 @@ def create_copy(copia:Copia):
     conn.biblioteca.copia.insert_one(new)
     creado = conn.biblioteca.copia.find_one({"isbn": new["isbn"],"numero":new["numero"]})
     return copiaEntity(creado)
+
+@lib.post('/loans',tags=["Prestamos"])
+def create_loan(prestamo:Prestamo):
+    new = dict(prestamo)
+    conn.biblioteca.prestamo.insert_one(new)
+    creado = conn.biblioteca.prestamo.find_one({"isbn": new["isbn"],"numero":new["numero"],"rut":new["rut"]})
+    return prestamoEntity(creado)
+
 #PUTs Actualizar
+@lib.put('/users/{rut}',tags=["Usuarios"])
+def update_user(rut:str,usuario:Usuario):
+    conn.biblioteca.usuario.find_one_and_update({
+        "rut":rut
+    },  {"$set": dict(usuario)}
+    )
+    return  usuarioEntity(conn.biblioteca.usuario.find_one({"rut":usuario.rut}))
+
+@lib.put('/authors/{nombre}',tags=["Autores"])
+def update_author(nombre:str,autor:Autor):
+    conn.biblioteca.autor.find_one_and_update({
+        "nombre":nombre
+    },  {"$set": dict(autor)}
+    )
+    return  usuarioEntity(conn.biblioteca.autor.find_one({"autor":autor.nombre}))
+
+
 
 #DELETEs Borrar
 @lib.delete('/users/{rut}',tags=["Usuarios"])
@@ -123,6 +160,11 @@ def delete_copy(isbn:str,numero:int):
     conn.biblioteca.copia.delete_one({"isbn":isbn,"numero":numero})
     return f"deleted {isbn}/{numero}"
 
+@lib.delete('/loans/{isbn}/{num}/{rut}',tags=["Prestamos"])
+def delete_copy(isbn:str,numero:int,rut:str):
+    conn.biblioteca.prestamo.delete_one({"isbn":isbn,"numero":numero,"rut":rut})
+    return f"deleted {isbn}/{numero}/{rut}"
+
 """ #update
 @user.put('/users({id})')
 def update_user(id:str,user:User):
@@ -132,10 +174,4 @@ def update_user(id:str,user:User):
     )
     return  userEntity(conn.local.user.find_one({"_id": ObjectId(id)}))
 
-
-#delete
-@user.delete('/users({id})')
-def delete_user(id:str):
-    conn.local.user.delete_one({"_id":ObjectId(id)})
-    return f"deleted {id}"
  """
