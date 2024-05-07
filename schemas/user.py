@@ -37,6 +37,14 @@ def prestamoEntity(item)->dict:
         "fecha_dev": item["fecha_dev"],
         "fecha_pres":item["fecha_pres"],
     }
+
+def autorearEntity(item)->dict:
+    return {
+        "titulo":item["titulo"],
+        "nombre":item["nombre"]
+    }
+
+
 #Devolver collection
 def usuariosEntity(entity)->list:
     return [usuarioEntity(item) for item in entity]
@@ -55,3 +63,6 @@ def copiasEntity(entity)->list:
 
 def prestamosEntity(entity)->list:
      return [prestamoEntity(item) for item in entity]
+
+def autorearEntities(entity)->list:
+    return [autorearEntity(item) for item in entity]

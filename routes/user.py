@@ -69,7 +69,15 @@ def find_loan(isbn:str,numero:int,rut:str):
      return prestamoEntity(conn.biblioteca.prestamo.find_one(
          {"isbn": isbn,"numero":numero,"rut":rut})
          )
+@lib.get('/autorear',tags=["Autorear"])
+def find_all_autorear():
+    return autorearEntities(conn.biblioteca.autorear.find())
 
+@lib.get('/autorear/{titulo}/{nombre}',tags=["Autorear"])
+def find_autorear(titulo:str,nombre:str):
+    return autorearEntity(conn.biblioteca.autorear.find_one(
+        {"titulo":titulo,"nombre":nombre}
+    ))
 
 #POSTs Insertar
 
@@ -115,6 +123,13 @@ def create_loan(prestamo:Prestamo):
     creado = conn.biblioteca.prestamo.find_one({"isbn": new["isbn"],"numero":new["numero"],"rut":new["rut"]})
     return prestamoEntity(creado)
 
+@lib.post('/autorear',tags=["Autorear"])
+def create_autorear(autorear:Autorear):
+    new = dict(autorear)
+    conn.biblioteca.autorear.insert_one(new)
+    creado = conn.biblioteca.autorear.find_one({"titulo":new["titulo"],"nombre":new["nombre"]})
+    return autorearEntity(creado)
+
 #PUTs Actualizar
 @lib.put('/users/{rut}',tags=["Usuarios"])
 def update_user(rut:str,usuario:Usuario):
@@ -130,7 +145,7 @@ def update_author(nombre:str,autor:Autor):
         "nombre":nombre
     },  {"$set": dict(autor)}
     )
-    return  usuarioEntity(conn.biblioteca.autor.find_one({"nombre":autor.nombre}))
+    return  autorEntity(conn.biblioteca.autor.find_one({"nombre":autor.nombre}))
 
 @lib.put('/books/{titulo}',tags=["Libros"])
 def update_book(titulo:str,libro:Libro):
@@ -138,26 +153,26 @@ def update_book(titulo:str,libro:Libro):
         "titulo":titulo
     },  {"$set": dict(libro)}
     )
-    return  usuarioEntity(conn.biblioteca.libro.find_one({"titulo":libro.titulo}))
+    return  libroEntity(conn.biblioteca.libro.find_one({"titulo":libro.titulo}))
 
-@lib.post('/editions/{isbn}',tags=["Ediciones"])
+@lib.put('/editions/{isbn}',tags=["Ediciones"])
 def update_edition(isbn:str,edicion:Edicion):
     conn.biblioteca.edicion.find_one_and_update({
         "isbn":isbn
     },  {"$set": dict(edicion)}
     )
-    return  usuarioEntity(conn.biblioteca.edicion.find_one({"isbn":edicion.isbn}))
+    return  edicionEntity(conn.biblioteca.edicion.find_one({"isbn":edicion.isbn}))
 
-@lib.post('/copies/{isbn}/{numero}',tags=["Copias"])
+@lib.put('/copies/{isbn}/{numero}',tags=["Copias"])
 def update_copy(isbn:str,numero:int,copia:Copia):
     conn.biblioteca.copia.find_one_and_update({
         "isbn":isbn,
         "numero":numero
     },  {"$set": dict(copia)}
     )
-    return  usuarioEntity(conn.biblioteca.copia.find_one({"isbn":copia.isbn,"numero":copia.numero}))
+    return  copiaEntity(conn.biblioteca.copia.find_one({"isbn":copia.isbn,"numero":copia.numero}))
 
-@lib.post('/copies/{isbn}/{numero}/{rut}',tags=["Copias"])
+@lib.put('/copies/{isbn}/{numero}/{rut}',tags=["Prestamos"])
 def update_loan(isbn:str,numero:int,rut:str,prestamo:Prestamo):
     conn.biblioteca.prestamo.find_one_and_update({
         "isbn":isbn,
@@ -165,9 +180,16 @@ def update_loan(isbn:str,numero:int,rut:str,prestamo:Prestamo):
         "rut":rut
     },  {"$set": dict(prestamo)}
     )
-    return  usuarioEntity(conn.biblioteca.prestamo.find_one(
+    return  prestamoEntity(conn.biblioteca.prestamo.find_one(
         {"isbn":prestamo.isbn,"numero":prestamo.numero,"rut":prestamo.rut}))
 
+@lib.put('/autorear/{titulo}/{nombre}',tags=["Autorear"])
+def update_autorear(titulo:str,nombre:str,autorear:Autorear):
+    conn.biblioteca.autorear.find_one_and_update({
+        "titulo":titulo,
+        "nombre":nombre
+    },  {"$set": dict(autorear)})
+    return autorearEntity(conn.biblioteca.autorear.find_one({"titulo":autorear.titulo,"nombre":autorear.nombre}))
 #DELETEs Borrar
 @lib.delete('/users/{rut}',tags=["Usuarios"])
 def delete_user(rut:str):
@@ -199,7 +221,10 @@ def delete_copy(isbn:str,numero:int,rut:str):
     conn.biblioteca.prestamo.delete_one({"isbn":isbn,"numero":numero,"rut":rut})
     return f"deleted {isbn}/{numero}/{rut}"
 
-
+@lib.delete('/autorear/{titulo}/{nombre}',tags=["Autorear"])
+def delete_autorear(titulo:str,nombre:str):
+    conn.biblioteca.autorear.delete_one({"titulo":titulo,"nombre":nombre})
+    return f"deleted {titulo}/{nombre}"
 
 """ #update
 @user.put('/users({id})')

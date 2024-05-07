@@ -23,5 +23,9 @@ tags_metadata = [
     {
         "name":"Prestamos",
         "description": "Rutas de collection Prestamo"
+    },
+    {
+        "name":"Autorear",
+        "description":"Rutas de collection Prestamo"
     }
 ]
