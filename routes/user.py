@@ -4,7 +4,7 @@ from schemas.user import *
 from models.user import Usuario,Prestamo,Libro,Copia,Edicion,Autor,Autorear
 from bson import ObjectId
 
-# define rutas
+#define rutas
 lib = APIRouter()
 
 #conn.[database].[collectionName]
@@ -133,6 +133,8 @@ def create_autorear(autorear:Autorear):
 #PUTs Actualizar
 @lib.put('/users/{rut}',tags=["Usuarios"])
 def update_user(rut:str,usuario:Usuario):
+    
+    fixloan(rut,usuario.rut)
     conn.biblioteca.usuario.find_one_and_update({
         "rut":rut
     },  {"$set": dict(usuario)}
@@ -141,6 +143,7 @@ def update_user(rut:str,usuario:Usuario):
 
 @lib.put('/authors/{nombre}',tags=["Autores"])
 def update_author(nombre:str,autor:Autor):
+    fixauthor(nombre,autor.nombre)
     conn.biblioteca.autor.find_one_and_update({
         "nombre":nombre
     },  {"$set": dict(autor)}
@@ -149,6 +152,7 @@ def update_author(nombre:str,autor:Autor):
 
 @lib.put('/books/{titulo}',tags=["Libros"])
 def update_book(titulo:str,libro:Libro):
+    fixbook(titulo,libro.titulo)
     conn.biblioteca.libro.find_one_and_update({
         "titulo":titulo
     },  {"$set": dict(libro)}
@@ -157,6 +161,9 @@ def update_book(titulo:str,libro:Libro):
 
 @lib.put('/editions/{isbn}',tags=["Ediciones"])
 def update_edition(isbn:str,edicion:Edicion):
+    fixbook_edicion(isbn,edicion.isbn)
+    fixcopy_edicion(isbn,edicion.isbn)
+    fixloan_edicion(isbn,edicion.isbn)
     conn.biblioteca.edicion.find_one_and_update({
         "isbn":isbn
     },  {"$set": dict(edicion)}
@@ -165,6 +172,7 @@ def update_edition(isbn:str,edicion:Edicion):
 
 @lib.put('/copies/{isbn}/{numero}',tags=["Copias"])
 def update_copy(isbn:str,numero:int,copia:Copia):
+    fixloan_copia(numero,isbn,copia.numero,copia.isbn)
     conn.biblioteca.copia.find_one_and_update({
         "isbn":isbn,
         "numero":numero
@@ -193,26 +201,33 @@ def update_autorear(titulo:str,nombre:str,autorear:Autorear):
 #DELETEs Borrar
 @lib.delete('/users/{rut}',tags=["Usuarios"])
 def delete_user(rut:str):
+    delfix_user(rut)
     conn.biblioteca.usuario.delete_one({"rut":rut})
     return f"deleted {rut}"
 
 @lib.delete('/authors/{nombre}',tags=["Autores"])
 def delete_author(nombre:str):
+    delfix_author(nombre)
     conn.biblioteca.autor.delete_one({"nombre":nombre})
     return f"deleted {nombre}"
 
 @lib.delete('/books/{titulo}',tags=["Libros"])
 def delete_book(titulo:str):
+    delfix_book(titulo)
     conn.biblioteca.libro.delete_one({"titulo":titulo})
     return f"deleted {titulo}"
 
 @lib.delete('/editions/{isbn}',tags=["Ediciones"])
 def delete_edition(isbn:str):
+    delfixbook_edicion(isbn)
+    delfixcopy_edicion(isbn)
+    delfixloan_edicion(isbn)
     conn.biblioteca.edicion.delete_one({"isbn":isbn})
     return f"deleted {isbn}"
 
 @lib.delete('/copies/{isbn}/{num}',tags=["Copias"])
 def delete_copy(isbn:str,numero:int):
+    delfixloan_copia(numero,isbn)
     conn.biblioteca.copia.delete_one({"isbn":isbn,"numero":numero})
     return f"deleted {isbn}/{numero}"
 
@@ -226,13 +241,72 @@ def delete_autorear(titulo:str,nombre:str):
     conn.biblioteca.autorear.delete_one({"titulo":titulo,"nombre":nombre})
     return f"deleted {titulo}/{nombre}"
 
-""" #update
-@user.put('/users({id})')
-def update_user(id:str,user:User):
-    conn.local.user.find_one_and_update({
-        "_id": ObjectId(id)
-    },  {"$set": dict(user)}
+#Fixes
+@lib.put('/loans',tags=["Prestamos"]) # ante cambio en copia, cambio en prestamo
+def fixloan_copia(numero:int,isbn:str,new_num:int,new_isbn:str):
+    conn.biblioteca.prestamo.update_many({
+        "numero":numero,"isbn":isbn
+    },  {"$set": {"numero":new_num,"isbn":new_isbn}}
     )
-    return  userEntity(conn.local.user.find_one({"_id": ObjectId(id)}))
 
- """
+@lib.delete('/loans',tags=["Prestamos"])
+def delfixloan_copia(numero:int,isbn:str): # copia borrada, borrada en prestamo
+    conn.biblioteca.prestamo.delete_many({"numero":numero,"isbn":isbn})
+
+
+@lib.put('/loans',tags=["Prestamos"])
+def fixloan(rut:str,new_rut:str): # usuario cambiado, cambia en prestamo
+    conn.biblioteca.prestamo.update_many({
+        "rut":rut
+    },  {"$set": {"rut":new_rut}}
+    )
+
+@lib.delete('/loans',tags=["Prestamos"])
+def delfix_user(rut:str): # usuario borrado, borrado en prestamo
+    conn.biblioteca.prestamo.delete_many({"rut":rut})
+
+@lib.put('/autorear',tags=["Autorear"]) # cambio en autor cambio en autorear
+def fixauthor(nombre:str,new_nombre:str):
+    conn.biblioteca.autorear.update_many({
+        "nombre":nombre
+    },  {"$set": {"nombre":new_nombre}}
+    )
+
+@lib.put('/autorear',tags=["Autorear"])
+def fixbook(titulo:str,new_titulo:str):
+    conn.biblioteca.autorear.update_many({
+        "titulo":titulo
+    },  {"$set": {"titulo":new_titulo}}
+    ) 
+
+@lib.delete('/autorear',tags=["Autorear"])
+def delfix_book(titulo:str):
+    conn.biblioteca.autorear.delete_many({"titulo":titulo})
+
+@lib.delete('/autorear',tags=["Autorear"])
+def delfix_author(nombre:str):
+    conn.biblioteca.autorear.delete_many({"nombre":nombre})
+
+@lib.put('/books',tags=["Libros"]) # ante cambio en edicion,cambio en libro
+def fixbook_edicion(isbn:str,new_isbn:str):
+    conn.biblioteca.libro.update_many({"isbn":isbn}, {"$set": {"isbn":new_isbn}})
+
+@lib.put('/copies',tags=["Copias"]) # ante cambio en edicion, cambio en copia
+def fixcopy_edicion(isbn:str,new_isbn:str):
+    conn.biblioteca.copia.update_many({"isbn":isbn},{"$set": {"isbn":new_isbn}})
+                                     
+@lib.put('/loans',tags=["Prestamos"]) # ante cambio en edicion, cambio en prestamos
+def fixloan_edicion(isbn:str,new_isbn:str):
+    conn.biblioteca.prestamo.update_many({"isbn":isbn},{"$set": {"isbn":new_isbn}})
+
+@lib.delete('/books',tags=["Libros"]) # ante borrado en edicion, cambio en libro
+def delfixbook_edicion(isbn:str):
+    conn.biblioteca.libro.delete_many({"isbn":isbn})
+
+@lib.delete('/copies',tags=["Copias"]) # ante  borrado en edicion, cambio en copia
+def delfixcopy_edicion(isbn:str): 
+    conn.biblioteca.copia.delete_many({"isbn":isbn})
+
+@lib.delete('/loans',tags=["Prestamos"]) # ante  borrado en edicion, cambio en prestamo
+def delfixloan_edicion(isbn:str):
+    conn.biblioteca.prestamo.delete_many({"isbn":isbn})
