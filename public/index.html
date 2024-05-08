@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BD Biblioteca</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Biblioteca DB</h1>
+    <div class="search-container">
+        <input type="text" placeholder="Buscar libro, autor, etc..." id="searchInput">
+        <button onclick="search()">Buscar</button>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="#">Refrescar</a></li>
+        </ul>
+    </nav>
+  </header>
+    <div class="accordion">
+        <div class="accordion-item">
+            <button class="accordion-button" onclick="toggleAccordion('autorSection')">Administrar Autores</button>
+            <div class="panel" id="autorSection">
+                <form>
+                    <input type="text" placeholder="Nombre del autor">
+                    <button type="button">Insertar</button>
+                    <button type="button">Actualizar</button>
+                    <button type="button">Borrar</button>
+                </form>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <button class="accordion-button" onclick="toggleAccordion('libroSection')">Administrar Libros</button>
+            <div class="panel" id="libroSection">
+                <form>
+                    <input type="text" placeholder="Título del libro">
+                    <button type="button">Insertar</button>
+                    <button type="button">Actualizar</button>
+                    <button type="button">Borrar</button>
+                </form>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <button class="accordion-button" onclick="toggleAccordion('edicionSection')">Administrar Ediciones</button>
+            <div class="panel" id="edicionSection">
+                <form>
+                    <input type="text" placeholder="ISBN">
+                    <input type="number" placeholder="Año">
+                    <input type="text" placeholder="Idioma">
+                    <button type="button">Insertar</button>
+                    <button type="button">Actualizar</button>
+                    <button type="button">Borrar</button>
+                </form>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <button class="accordion-button" onclick="toggleAccordion('copiaSection')">Administrar Copias</button>
+            <div class="panel" id="copiaSection">
+                <form>
+                    <input type="number" placeholder="Número de copia">
+                    <input type="text" placeholder="Edición (ISBN)">
+                    <button type="button">Insertar</button>
+                    <button type="button">Actualizar</button>
+                    <button type="button">Borrar</button>
+                </form>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <button class="accordion-button" onclick="toggleAccordion('usuarioSection')">Administrar Usuarios</button>
+            <div class="panel" id="usuarioSection">
+                <form>
+                    <input type="text" placeholder="RUT del usuario">
+                    <input type="text" placeholder="Nombre del usuario">
+                    <button type="button">Insertar</button>
+                    <button type="button">Actualizar</button>
+                    <button type="button">Borrar</button>
+                </form>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <button class="accordion-button" onclick="toggleAccordion('prestamoSection')">Administrar Préstamos</button>
+            <div class="panel" id="prestamoSection">
+                <form>
+                    <input type="text" placeholder="Usuario (RUT)">
+                    <input type="text" placeholder="Libro (Título)">
+                    <input type="date" placeholder="Fecha de préstamo">
+                    <input type="date" placeholder="Fecha de devolución">
+                    <button type="button">Insertar</button>
+                    <button type="button">Actualizar</button>
+                    <button type="button">Borrar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
