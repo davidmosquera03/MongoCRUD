@@ -1,26 +1,23 @@
-// server.js
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const app = express();
-const port = process.env.PORT || 3000;
-
-// Conexión a MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('Conexión exitosa a MongoDB'))
-.catch(err => console.error('Error al conectar a MongoDB', err));
-
-app.use(express.json());
-
-// Rutas básicas
-app.get('/', (req, res) => {
-  res.send('Bienvenido a la API de MongoCRUD');
-});
-
-// Inicia el servidor
-app.listen(port, () => {
-    console.log(`Servidor ejecutándose en http://localhost:${port}`);
-});
+{
+  "name": "biblioteca",
+  "version": "1.0.0",
+  "description": "Un servidor Express para gestionar una biblioteca",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "open": "start http://localhost:3000"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "express": "^4.19.2",
+    "mongoose": "^5.13.8",
+    "dotenv": "^10.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  }
+}
