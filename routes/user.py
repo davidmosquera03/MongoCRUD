@@ -310,3 +310,50 @@ def delfixcopy_edicion(isbn:str):
 @lib.delete('/loans',tags=["Prestamos"]) # ante  borrado en edicion, cambio en prestamo
 def delfixloan_edicion(isbn:str):
     conn.biblioteca.prestamo.delete_many({"isbn":isbn})
+
+@lib.post('/seed')
+def fill_db():
+    """ 
+    conn.biblioteca.autor.insert_many([{"nombre": "Gabriel García Márquez"},
+                                      {"nombre": "J.K. Rowling"},{"nombre": "George R.R. Martin"},
+                                      {"nombre": "Isabel Allende"},{"nombre": "Paulo Coelho"}]) 
+    conn.biblioteca.libro.insert_many([{"titulo": "Cien años de soledad", "isbn": "978-84-376-0494-7"},
+                    {"titulo": "Harry Potter y la piedra filosofal", "isbn": "978-84-9838-631-9"},
+                    {"titulo":"Juego de tronos", "isbn": "978-84-450-0262-9"},
+                    {"titulo": "La casa de los espíritus", "isbn": "978-84-663-2716-3"},
+                    {"titulo": "El alquimista", "isbn": "978-84-08-00279-5"}]) 
+    
+    conn.biblioteca.autorear.insert_many([
+    {"titulo": "Cien años de soledad", "nombre": "Gabriel García Márquez"},
+    {"titulo": "Harry Potter y la piedra filosofal", "nombre": "J.K. Rowling"},
+    {"titulo": "Juego de tronos", "nombre": "George R.R. Martin"},
+    {"titulo": "La casa de los espíritus", "nombre": "Isabel Allende"},
+    {"titulo": "El alquimista", "nombre": "Paulo Coelho"}])
+    conn.biblioteca.edicion.insert_many([
+    {"isbn": "978-84-376-0494-7", "anyo": "1967", "idioma": "Español"},
+    {"isbn": "978-84-9838-631-9", "anyo": "1997", "idioma": "Inglés"},
+    {"isbn": "978-84-450-0262-9", "anyo": "1996", "idioma": "Inglés"},
+    {"isbn": "978-84-663-2716-3", "anyo": "1982", "idioma": "Español"},
+    {"isbn": "978-84-08-00279-5", "anyo": "1988", "idioma": "Portugués"}])
+
+    """
+    isbns = [
+    "978-84-376-0494-7", "978-84-9838-631-9", "978-84-450-0262-9", "978-84-663-2716-3", 
+    "978-84-08-00279-5"]
+
+    # Para cada ISBN
+    for isbn in isbns:
+        # Inserta 5 registros
+        copias = [{"numero": j, "isbn": isbn} for j in range(1, 6)]
+        conn.biblioteca.copia.insert_many(copias)
+
+    # Lista de nombres generados
+    nombres = ["Carlos", "María", "Pedro", "Ana", "Javier", "Carmen", "Miguel", "Teresa", "Francisco", "Isabel", "Antonio", "Pilar", "José", "Laura", "Juan", "Sara", "Manuel", "Elena", "Luis", "Patricia"]
+
+    # Para cada nombre en la lista
+    for i, nombre in enumerate(nombres):
+        # Genera un RUT aleatorio de 6 dígitos
+        rut = str(100000 + i * 3000)
+        
+        # Inserta el usuario en la colección
+        conn.biblioteca.usuario.insert_one({"rut": rut, "nombre": nombre})
