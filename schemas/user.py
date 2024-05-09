@@ -44,8 +44,28 @@ def autorearEntity(item)->dict:
         "nombre":item["nombre"]
     }
 
+def query1Entity(item)->dict:
+    return {
+        "numero": item["numero"],
+        "isbn": item["isbn"],
+        "titulo":item["titulo"],
+        "autor":item["autor"],
+        "anyo":item["anyo"],
+        "idioma":item["idioma"]
+    }
 
+def query2Entity(item)->dict:
+    return {
+        "libro":item["libro"],
+        "usuario":item["usuario"]
+    }
 #Devolver collection
+def query1Entities(entity)->list:
+    return [query1Entity(item) for item in entity]
+
+def query2Entities(entity)->list:
+    return [query2Entity(item) for item in entity]
+
 def usuariosEntity(entity)->list:
     return [usuarioEntity(item) for item in entity]
 

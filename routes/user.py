@@ -3,12 +3,118 @@ from config.db import conn
 from schemas.user import *
 from models.user import Usuario,Prestamo,Libro,Copia,Edicion,Autor,Autorear
 from bson import ObjectId
-
+import json
 #define rutas
 lib = APIRouter()
 
-#conn.[database].[collectionName]
+pipeline = [
+    {
+        "$lookup": {
+            "from": "edicion",
+            "localField": "isbn",
+            "foreignField": "isbn",
+            "as": "edicion_info"
+        }
+    },
+     {
+        "$unwind": "$edicion_info"
+    },
+    {
+        "$lookup": {
+            "from": "copia",
+            "localField": "isbn",
+            "foreignField": "isbn",
+            "as": "copia_info"
+        }
+    },
+    {
+        "$unwind": "$copia_info"
+    },{
+        "$lookup": {
+            "from": "autorear",
+            "localField": "titulo",
+            "foreignField": "titulo",
+            "as": "autorear_info"
+        }
+    },
+    {
+        "$unwind": "$autorear_info"
+    },
+     {
+        "$lookup": {
+            "from": "autor",
+            "localField": "autorear_info.nombre",
+            "foreignField": "nombre",
+            "as": "autor_info"
+        }
+    },
+    {
+        "$unwind": "$autor_info"
+    },
+    {
+        "$project": {
+            "_id": 0,
+            "isbn": "$isbn",
+            "numero": "$copia_info.numero",
+            "titulo": "$titulo",
+            "anyo": "$edicion_info.anyo",
+            "idioma": "$edicion_info.idioma",
+            "autor": "$autor_info.nombre"
+        }
+    }
 
+]
+
+
+
+#conn.[database].[collectionName]
+# QUERY 
+@lib.get('/query1')
+def show_bookcopies():
+    res =[doc for doc in conn.biblioteca.libro.aggregate(pipeline)]
+    print(res)
+    return query1Entities(res)
+@lib.get('/query2/{nombre}')
+def query2(nombre:str):
+    pipeline2 = [
+    {
+    "$lookup":{
+    "from":"usuario",
+    "localField":"rut",
+    "foreignField":"rut",
+    "as": "usuario_info"  
+       }
+    },
+    {
+    "$unwind":"$usuario_info"
+    },
+    {
+    "$match":{
+    "usuario_info.nombre": nombre
+    }
+    },
+    {
+    "$lookup":{
+    "from":"libro",
+    "localField":"isbn",
+    "foreignField":"isbn",
+    "as": "libro_info"
+    }
+    },
+    {
+    "$unwind":"$libro_info"
+    },
+    {
+    "$project":{
+    "_id":0,
+    "libro":"$libro_info.titulo",
+    "usuario":"$usuario_info.nombre"
+    }
+    }
+    ]
+    res = [doc for doc in conn.biblioteca.prestamo.aggregate(pipeline2)]
+    print(res)
+    return query2Entities(res)
 #GETs Encontrar
 @lib.get('/users',tags=["Usuarios"])
 def find_all_users():
@@ -313,7 +419,9 @@ def delfixloan_edicion(isbn:str):
 
 @lib.post('/seed')
 def fill_db():
-    """ 
+    conn.biblioteca.autor.insert_many([{"nombre": "Gabriel García Márquez"},
+                                      {"nombre": "J.K. Rowling"},{"nombre": "George R.R. Martin"},
+                                      {"nombre": "Isabel Allende"},{"nombre": "Paulo Coelho"}]) 
     conn.biblioteca.autor.insert_many([{"nombre": "Gabriel García Márquez"},
                                       {"nombre": "J.K. Rowling"},{"nombre": "George R.R. Martin"},
                                       {"nombre": "Isabel Allende"},{"nombre": "Paulo Coelho"}]) 
@@ -336,7 +444,7 @@ def fill_db():
     {"isbn": "978-84-663-2716-3", "anyo": "1982", "idioma": "Español"},
     {"isbn": "978-84-08-00279-5", "anyo": "1988", "idioma": "Portugués"}])
 
-    """
+    
     isbns = [
     "978-84-376-0494-7", "978-84-9838-631-9", "978-84-450-0262-9", "978-84-663-2716-3", 
     "978-84-08-00279-5"]
@@ -357,3 +465,18 @@ def fill_db():
         
         # Inserta el usuario en la colección
         conn.biblioteca.usuario.insert_one({"rut": rut, "nombre": nombre})
+
+    conn.biblioteca.prestamo.insert_many([{"numero":2 , "isbn":"978-84-376-0494-7", 
+                                     "rut": "100000", 
+                                     "fecha_pres": "04/03/2024", 
+                                     "fecha_dev": "18/03/2024"},{"numero":3 , "isbn":"978-84-663-2716-3", 
+                                     "rut": "100000", 
+                                     "fecha_pres": "04/03/2024", 
+                                     "fecha_dev": "18/03/2024"},{"numero":1 , "isbn":"978-84-9838-631-9", 
+                                     "rut": "109000", 
+                                     "fecha_pres": "01/02/2024", 
+                                     "fecha_dev": "15/02/2024"}])
+    # carlos presta numero 2 de 100 años de soledad DD/MM/AAAA, tambien casa de espiritus
+    # Ana presta numero 1 Harry Potter
+    
+    
