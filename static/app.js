@@ -395,64 +395,59 @@ function deleteBook(isbn) {
 }
 
 
-books.forEach(book => {
-    const bookElement = document.createElement('div');
-    bookElement.id = 'book-' + encodeURIComponent(book.isbn); // Esto ayuda a identificar cada libro por su ISBN
-    bookElement.innerHTML = `
-        <div><strong>Título:</strong> ${book.titulo}</div>
-        <div><strong>ISBN:</strong> ${book.isbn}</div>
-        <button onclick="deleteBook('${book.isbn}')">Borrar</button>
-    `;
-    booksList.appendChild(bookElement);
-});
-
 
 
 
 // --> INSERTAR LIBRO
-document.getElementById('insertBookButton').addEventListener('click', function() {
-    insertBook();
+document.addEventListener('DOMContentLoaded', function() {
+    const insertBookButton = document.getElementById('insertBookButton');
+    insertBookButton.addEventListener('click', insertBook);
+    console.log("Boton se oprime")
 });
 
-
 function insertBook() {
-    const bookTitle = document.getElementById('bookTitleInput').value;
-    const bookIsbn = document.getElementById('bookIsbnInput').value;
+    const titleInput = document.getElementById('bookTitleInput');
+    const isbnInput = document.getElementById('bookIsbnInput');
 
-    if (!bookTitle || !bookIsbn) {
-        console.error("Book title or ISBN input is empty.");
-        document.getElementById('errorDisplay').textContent = "Please fill in all fields.";
+    if (!titleInput || !isbnInput) {
+        console.error('Input fields not found.');
+        document.getElementById('errorDisplay').textContent = 'Input fields not found.';
         return;
     }
 
-    console.log("Inserting book:", bookTitle, "with ISBN:", bookIsbn);
-    const bookData = {
-        titulo: bookTitle,
-        isbn: bookIsbn
-    };
+    const title = titleInput.value.trim();
+    const isbn = isbnInput.value.trim();
+
+    if (!title || !isbn) {
+        console.error("Title or ISBN input is empty.");
+        document.getElementById('errorDisplay').textContent = "Please fill in both title and ISBN.";
+        return;
+    }
+
+    console.log("Inserting book:", title, "with ISBN:", isbn);
+    const bookData = { titulo: title, isbn: isbn };
 
     fetch('http://localhost:8000/books', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(bookData)
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error(`Network response was not ok: ${response.statusText}`);
+            throw new Error('Network response was not ok: ' + response.statusText);
         }
         return response.json();
     })
     .then(data => {
-        console.log('Book inserted:', data);
-        // Aquí puedes llamar a una función para actualizar la lista de libros en la interfaz de usuario
+        console.log('Book inserted correctly:', data);
+        // Aquí puedes llamar a cualquier función para refrescar la lista de libros o actualizar la UI
     })
     .catch(error => {
         console.error('Error inserting book:', error);
         document.getElementById('errorDisplay').textContent = 'Error inserting book: ' + error.message;
     });
 }
+
 
     
 
@@ -752,43 +747,75 @@ function showAllLoans() {
 }
 
 // Insertar un préstamo
+document.addEventListener('DOMContentLoaded', function() {
+    const insertLoanButton = document.getElementById('insertLoanButton');
+    if (insertLoanButton) {
+        insertLoanButton.addEventListener('click', insertLoan);
+    } else {
+        console.error('Insert Loan button not found.');
+    }
+});
 
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('insertLoanButton').addEventListener('click', insertLoan);
+    const insertLoanButton = document.getElementById('insertLoanButton');
+    insertLoanButton.addEventListener('click', insertLoan);
 });
 
 function insertLoan() {
-    const userRut = document.getElementById('loanUserRUTInput').value;
-    const bookTitle = document.getElementById('loanBookTitleInput').value;
-    const startDate = document.getElementById('loanStartDateInput').value;
-    const endDate = document.getElementById('loanEndDateInput').value;
+    const isbnInput = document.getElementById('loanIsbnInput');
+    const numberInput = document.getElementById('loanNumberInput');
+    const userRutInput = document.getElementById('loanUserRUTInput');
+    const startDateInput = document.getElementById('loanStartDateInput');
+    const endDateInput = document.getElementById('loanEndDateInput');
 
-    if (!userRut || !bookTitle || !startDate || !endDate) {
-        console.error("Please fill in all fields.");
+    if (!isbnInput || !numberInput || !userRutInput || !startDateInput || !endDateInput) {
+        console.error("One or more input fields are missing.");
+        document.getElementById('errorDisplay').textContent = "All input fields are required.";
         return;
     }
 
-    const loanData = { userRut, bookTitle, startDate, endDate };
+    const isbn = isbnInput.value.trim();
+    const number = parseInt(numberInput.value, 10);
+    const userRut = userRutInput.value.trim();
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
+
+    if (!isbn || isNaN(number) || !userRut || !startDate || !endDate) {
+        console.error("Please fill in all fields correctly.");
+        document.getElementById('errorDisplay').textContent = "Please fill in all fields correctly.";
+        return;
+    }
+
+    const loanData = {
+        isbn,
+        numero: number,
+        rut: userRut,
+        fechaInicio: startDate,
+        fechaFin: endDate
+    };
+
     fetch('http://localhost:8000/loans', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(loanData)
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Failed to process the request: ' + response.statusText);
+            throw new Error(`Network response was not ok: ${response.statusText}`);
         }
         return response.json();
     })
     .then(data => {
-        console.log('Loan inserted:', data);
-        showAllLoans(); // Refresh the list of loans
+        console.log('Loan inserted successfully:', data);
+        // Actualiza la UI aquí si es necesario
     })
     .catch(error => {
         console.error('Error inserting loan:', error);
-        document.getElementById('errorDisplay').textContent = 'Error inserting loan: ' + error.message;
+        document.getElementById('errorDisplay').textContent = `Error inserting loan: ${error.message}`;
     });
 }
+
+
 
 
 
@@ -832,12 +859,9 @@ function showAllUsers() {
             document.getElementById('errorDisplay').textContent = 'Error fetching users: ' + error.message;
         });
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    const insertUserButton = document.getElementById('insertUserButton');
-    if (insertUserButton) {
-        insertUserButton.addEventListener('click', insertUser);
-    }
+// ---> Insertar usuario
+document.getElementById('insertUserButton').addEventListener('click', function() {
+    insertUser();
 });
 
 function insertUser() {
@@ -909,4 +933,3 @@ function deleteUser(rut) {
         document.getElementById('errorDisplay').textContent = `Error deleting user: ${error.message}`;
     });
 }
-
