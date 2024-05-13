@@ -14,3 +14,4 @@
  4. ctr+clic en el enlace de host que aparece
  5. agregar /docs al final de la url
  6. para cerrar hacer ctrl+c en terminal
+ 7. Pegar esta URL en el navegador: http://localhost:8000/static/index.html?#
