@@ -266,7 +266,7 @@ function insertAuthor() {
     })
     .then(data => {
         console.log('Author inserted correctly:', data);
-        showAllAuthors(); // To refresh the list
+        showAllAuthors(); 
     })
     .catch(error => {
         console.error('Error inserting author:', error);
@@ -663,7 +663,7 @@ function deleteCopy(isbn, copyNumber) {
     })
     .then(message => {
         console.log('Copy deleted:', message);
-        removeCopyFromUI(copyNumber);  // Actualiza la lista de copias en la interfaz de usuario tras borrar
+        removeCopyFromUI(copyNumber); 
     })
     .catch(error => {
         console.error('Error deleting copy:', error);
@@ -746,7 +746,7 @@ function deleteCopy(isbn, copyNumber) {
     })
     .then(message => {
         console.log('Copy deleted:', message);
-        showAllCopies();  // Actualiza la lista de copias en la interfaz de usuario tras borrar
+        showAllCopies();  
     })
     .catch(error => {
         console.error('Error deleting copy:', error);
@@ -792,7 +792,6 @@ document.getElementById('updateCopyButton').addEventListener('click', function()
     })
     .then(data => {
         console.log('Copy updated:', data);
-        // Refresh the list of copies or update UI here
     })
     .catch(error => {
         console.error('Error updating copy:', error);
@@ -896,7 +895,6 @@ function insertLoan() {
     })
     .then(data => {
         console.log('Loan inserted successfully:', data);
-        // Actualiza la UI aquí si es necesario
     })
     .catch(error => {
         console.error('Error inserting loan:', error);
@@ -1031,11 +1029,9 @@ document.getElementById('updateUserButton').addEventListener('click', function()
     })
     .then(data => {
         console.log('User updated:', data);
-        // Refresh the user list or update UI here
     })
     .catch(error => {
         console.error('Error updating user:', error);
         document.getElementById('errorDisplay').textContent = 'Error updating user: ' + error.message;
     });
 });
-
