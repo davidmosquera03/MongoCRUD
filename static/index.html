@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BD Biblioteca</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Biblioteca DB</h1>
+    <nav>
+        <button class=admin-button id="loadDataButton" onclick="loadData()">Cargar Datos Iniciales</button>
+        <button class=admin-button id="showBookCopiesButton">Mostrar Copias de Libros</button>
+        <button id="showLoansByUserButton">Mostrar Préstamos por Usuario</button>
+        <input type="text" id="userNameInput" class="input-texto-usuario" placeholder="Ingrese nombre del usuario">
+    </nav>
+  </header>
+    <div class="accordion">
+        <div class="accordion-item">
+            <button class="accordion-button" onclick="toggleAccordion('autorSection')">Administrar Autores</button>
+            <div class="panel" id="autorSection">
+                <form>
+                    <input type="text" id="authorNameInput" class="input-text" placeholder="Nombre del autor">
+                    <button id="insertAuthorButton" class="button">Insertar Autor</button>
+                    <button id="actualizarAutorBtn" class="button">Actualizar Autor</button>
+                    <button id="showAllAuthorsButton" class="button" onclick="toggleAllAuthorsDisplay()">Buscar Todos los Autores</button>
+                </form>
+                <div id="authorsList" class="authors-list"></div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <button class="accordion-button" onclick="toggleAccordion('libroSection')">Administrar Libros</button>
+            <div class="panel" id="libroSection">
+                <form>
+                    <input type="text" id="bookTitleInput" class="input-text" placeholder="Título del libro">
+                    <input type="text" id="bookIsbnInput" class="input-text" placeholder="ISBN del libro">
+                    <button type="button" id="insertBookButton" class="button">Insertar</button>
+                    <button type="button" id="updateBookButton" class="button">Actualizar</button>
+                    <button type="button" id="showAllBooksButton" class="button" onclick="toggleAllBooksDisplay()">Buscar Todos los Libros</button>
+                </form>
+                <div id="booksList" class="books-list"></div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <button class="accordion-button" onclick="toggleAccordion('editionSection')">Administrar Ediciones</button>
+            <div class="panel" id="editionSection">
+                <form>
+                    <input type="text" id="editionIsbnInput" class="input-text" placeholder="ISBN">
+                    <input type="number" id="yearInput" class="input-text" placeholder="Año">
+                    <input type="text" id="languageInput" class="input-text" placeholder="Idioma">
+                    <button type="button" id="insertEditionButton" class="button">Insertar</button>
+                    <button type="button" id="updateEditionButton" class="button">Actualizar</button>
+                    <button type="button" id="showAllEditionsButton" class="button" onclick="toggleAllEditionsDisplay()">Buscar Todas las Ediciones</button>
+                </form>
+                <div id="editionsList" class="editions-list"></div>
+            </div>
+        </div>
+        
+        <div class="accordion-item">
+            <button class="accordion-button" onclick="toggleAccordion('copySection')">Administrar Copias</button>
+            <div class="panel" id="copySection">
+                <form>
+                    <input type="number" id="copyNumberInput" class="input-text" placeholder="Número de copia">
+                    <input type="text" id="copyIsbnInput" class="input-text" placeholder="ISBN de la edición">
+                    <button type="button" id="insertCopyButton" class="button">Insertar</button>
+                    <button type="button" id="updateCopyButton" class="button">Actualizar</button>
+                    <button type="button" id="showAllCopiesButton" class="button" onclick="toggleAllCopiesDisplay()">Buscar Todas las Copias</button>
+                </form>
+                <div id="copyList" class="copy-list"></div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <button class="accordion-button" onclick="toggleAccordion('usuarioSection')">Administrar Usuarios</button>
+            <div class="panel" id="usuarioSection">
+                <form>
+                    <input type="text" id="userRUTInput" class="input-text" placeholder="RUT del usuario">
+                    <input type="text" id="userNameInput" class="input-text" placeholder="Nombre del usuario">
+                    <button type="button" id="insertUserButton" class="button" onclick="insertUser()">Insertar</button>
+                    <button type="button" id="updateUserButton" class="button" onclick="updateUser()">Actualizar</button>
+                    <button type="button" id="showAllUsersButton" class="button" onclick="toggleAllUsersDisplay()">Buscar Todos los Usuarios</button>
+                </form>
+                <div id="userList" class="user-list"></div>
+            </div>
+        </div>    
+        <div class="accordion-item">
+            <button class="accordion-button" onclick="toggleAccordion('loanSection')">Administrar Préstamos</button>
+            <div class="panel" id="loanSection">
+                <form>
+                    <input type="text" id="loanUserRUTInput" class="input-text" placeholder="Usuario (RUT)">
+                    <input type="text" id="loanBookTitleInput" class="input-text" placeholder="Libro (Título)">
+                    <input type="date" id="loanStartDateInput" class="input-text" placeholder="Fecha de préstamo">
+                    <input type="date" id="loanEndDateInput" class="input-text" placeholder="Fecha de devolución">
+                    <button type="button" id="insertLoanButton" class="button" onclick="insertLoan()">Insertar</button>
+                    <button type="button" id="updateLoanButton" class="button" onclick="updateLoan()">Actualizar</button>
+                    <button type="button" id="showAllLoansButton" class="button" onclick="toggleAllLoansDisplay()">Buscar Todos los Préstamos</button>
+                </form>
+                <div id="loanList" class="loan-list"></div>
+            </div>
+        </div>
+    </div>
+    <div id="bookCopiesList" class="book-copies-list"></div>
+    <div id="loansList" class="loans-list"></div>
+    <div id="errorDisplay" style="color: red;"></div>
+    <script src="app.js"></script>
+</body>
+</html>
