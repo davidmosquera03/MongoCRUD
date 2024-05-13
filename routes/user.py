@@ -1,11 +1,23 @@
 from fastapi import APIRouter
+from fastapi import HTTPException
 from config.db import conn
 from schemas.user import *
 from models.user import Usuario,Prestamo,Libro,Copia,Edicion,Autor,Autorear
 from bson import ObjectId
+import unicodedata
+import re
 import json
 #define rutas
 lib = APIRouter()
+
+def normalize(text):
+    # Remover caracteres diacríticos
+    normalized = unicodedata.normalize('NFD', text)
+    return ''.join([c for c in normalized if unicodedata.category(c) != 'Mn'])
+
+
+
+
 
 pipeline = [
     {
@@ -74,47 +86,60 @@ def show_bookcopies():
     res =[doc for doc in conn.biblioteca.libro.aggregate(pipeline)]
     print(res)
     return query1Entities(res)
+
 @lib.get('/query2/{nombre}')
 def query2(nombre:str):
     pipeline2 = [
-    {
-    "$lookup":{
-    "from":"usuario",
-    "localField":"rut",
-    "foreignField":"rut",
-    "as": "usuario_info"  
-       }
-    },
-    {
-    "$unwind":"$usuario_info"
-    },
-    {
-    "$match":{
-    "usuario_info.nombre": nombre
-    }
-    },
-    {
-    "$lookup":{
-    "from":"libro",
-    "localField":"isbn",
-    "foreignField":"isbn",
-    "as": "libro_info"
-    }
-    },
-    {
-    "$unwind":"$libro_info"
-    },
-    {
-    "$project":{
-    "_id":0,
-    "libro":"$libro_info.titulo",
-    "usuario":"$usuario_info.nombre"
-    }
-    }
+        {
+            "$lookup": {
+                "from": "usuario",
+                "localField": "rut",
+                "foreignField": "rut",
+                "as": "usuario_info"  
+            }
+        },
+        {
+            "$unwind": "$usuario_info"
+        },
+        {
+            "$match": {
+                "usuario_info.nombre": nombre
+            }
+        },
+        {
+            "$lookup": {
+                "from": "libro",
+                "localField": "isbn",
+                "foreignField": "isbn",
+                "as": "libro_info"
+            }
+        },
+        {
+            "$unwind": "$libro_info"
+        },
+        {
+            "$group": {
+                "_id": {
+                    "libro": "$libro_info.titulo",
+                    "usuario": "$usuario_info.nombre"
+                },
+                "count": {"$sum": 1}  # Puedes contar cuántas veces está prestado el mismo libro
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "libro": "$_id.libro",
+                "usuario": "$_id.usuario",
+                "prestamos": "$count"
+            }
+        }
     ]
     res = [doc for doc in conn.biblioteca.prestamo.aggregate(pipeline2)]
     print(res)
     return query2Entities(res)
+
+
 #GETs Encontrar
 @lib.get('/users',tags=["Usuarios"])
 def find_all_users():
@@ -140,11 +165,16 @@ def find_book(titulo:str):
 def find_all_authors():
     return autoresEntity(conn.biblioteca.autor.find())
 
-@lib.get('/authors/{nombre}',tags=["Autores"])
-def find_author(nombre:str):
-     return autorEntity(conn.biblioteca.autor.find_one(
-         {"nombre": nombre})
-         )
+@lib.get('/authors/{nombre}', tags=["Autores"])
+def find_authors(nombre: str):
+    nombre = normalize(nombre)  # Normaliza el nombre ingresado
+    regex = re.compile(f'.*{re.escape(nombre)}.*', re.IGNORECASE)  # Busca coincidencias en cualquier parte del nombre
+    authors = list(conn.biblioteca.autor.find({"nombre_normalizado": regex}))
+    if authors:
+        return [autorEntity(author) for author in authors]
+    else:
+        raise HTTPException(status_code=404, detail="No authors found matching the criteria")
+
 
 @lib.get('/editions',tags=["Ediciones"])
 def find_all_editions():
@@ -311,11 +341,19 @@ def delete_user(rut:str):
     conn.biblioteca.usuario.delete_one({"rut":rut})
     return f"deleted {rut}"
 
-@lib.delete('/authors/{nombre}',tags=["Autores"])
-def delete_author(nombre:str):
-    delfix_author(nombre)
-    conn.biblioteca.autor.delete_one({"nombre":nombre})
-    return f"deleted {nombre}"
+@lib.delete('/authors/{nombre}', tags=["Autores"])
+def delete_author(nombre: str):
+    # Intentar buscar el autor antes de borrar para verificar si existe
+    author = conn.biblioteca.autor.find_one({"nombre": nombre})
+    if not author:
+        raise HTTPException(status_code=404, detail="Author not found")
+    
+    result = conn.biblioteca.autor.delete_one({"nombre": nombre})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Author not found after deletion attempt")
+
+    return {"detail": f"Author '{nombre}' deleted successfully"}
 
 @lib.delete('/books/{titulo}',tags=["Libros"])
 def delete_book(titulo:str):
@@ -479,4 +517,9 @@ def fill_db():
     # carlos presta numero 2 de 100 años de soledad DD/MM/AAAA, tambien casa de espiritus
     # Ana presta numero 1 Harry Potter
     
-    
+for author in conn.biblioteca.autor.find():
+    normalized_name = normalize(author['nombre'])
+    conn.biblioteca.autor.update_one(
+        {'_id': author['_id']},
+        {'$set': {'nombre_normalizado': normalized_name}}
+    )
