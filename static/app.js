@@ -83,10 +83,10 @@ document.getElementById('showBookCopiesButton').addEventListener('click', functi
 
 function displayBookCopies(data) {
     const container = document.getElementById('bookCopiesList');
-    container.innerHTML = ''; // Clear previous entries
+    container.innerHTML = ''; 
     data.forEach(copy => {
         const copyElement = document.createElement('div');
-        copyElement.classList.add('copy-item'); // Agregar clase para estilización
+        copyElement.classList.add('copy-item'); 
         copyElement.innerHTML = `
             <div class="copy-detail"><strong>Autor:</strong> ${copy.autor || 'No especificado'}</div>
             <div class="copy-detail"><strong>Libro:</strong> ${copy.titulo || 'No especificado'}</div>
@@ -99,18 +99,17 @@ function displayBookCopies(data) {
 
 
 // ---> QUERY 2
-let lastUserSearch = ''; // Variable para almacenar el último usuario buscado
+let lastUserSearch = ''; 
 
 document.getElementById('showLoansByUserButton').addEventListener('click', function() {
     const userName = document.getElementById('userNameInput').value.trim();
     const container = document.getElementById('loansList');
     
-    // Toggle visibility if the same user is searched again
     if (container.style.display === 'block' && lastUserSearch === userName) {
         container.style.display = 'none';
-        container.innerHTML = ''; // Clear the previous content
+        container.innerHTML = ''; 
     } else {
-        lastUserSearch = userName; // Update last search
+        lastUserSearch = userName; 
         container.style.display = 'block';
         fetchLoansByUser(userName);
     }
@@ -125,8 +124,7 @@ function fetchLoansByUser(userName) {
             return response.json();
         })
         .then(data => {
-            console.log("Datos recibidos:", data);  // Esto te ayudará a ver lo que recibes del servidor
-            displayLoans(data);
+            console.log("Datos recibidos:", data);  
         })
         .catch(error => {
             console.error('Error fetching loans:', error);
@@ -136,7 +134,7 @@ function fetchLoansByUser(userName) {
 
 function displayLoans(data) {
     const container = document.getElementById('loansList');
-    container.innerHTML = ''; // Clear previous entries
+    container.innerHTML = ''; 
     if (data.length === 0) {
         container.innerHTML = '<p>No hay préstamos para mostrar.</p>';
     } else {
@@ -279,10 +277,10 @@ function insertAuthor() {
 
 // Event listener para el botón de actualizar autor
 document.getElementById('actualizarAutorBtn').addEventListener('click', function() {
-    const authorName = document.getElementById('authorNameInput').value; // Asume que hay un campo de entrada con ID 'authorNameInput'
+    const authorName = document.getElementById('authorNameInput').value; 
     const newAuthorDetails = {
         nombre: authorName,
-        // Aquí podrías añadir otros detalles que necesites actualizar
+
     };
 
     updateAuthor(authorName, newAuthorDetails);
@@ -305,7 +303,6 @@ function updateAuthor(name, details) {
     .then(updatedAuthor => {
         console.log('Author updated:', updatedAuthor);
         document.getElementById('statusDisplay').textContent = 'Author updated successfully';
-        // Actualizar la UI según sea necesario
     })
     .catch(error => {
         console.error('Error updating author:', error);
@@ -341,11 +338,11 @@ function showAllBooks() {
         .then(response => response.json())
         .then(books => {
             const booksList = document.getElementById('booksList');
-            booksList.innerHTML = ''; // Limpiar lista antes de mostrar nuevos resultados
+            booksList.innerHTML = ''; 
             books.forEach(book => {
                 const bookElement = document.createElement('div');
                 bookElement.className = 'book-entry';
-                bookElement.setAttribute('data-title', book.titulo); // Agregar atributo data-title
+                bookElement.setAttribute('data-title', book.titulo); 
                 bookElement.innerHTML = `
                     <div><strong>Título:</strong> ${book.titulo}</div>
                     <div><strong>ISBN:</strong> ${book.isbn}</div>
@@ -364,10 +361,10 @@ function showAllBooks() {
 
 // Función para eliminar un libro de la interfaz de usuario usando el ISBN
 function removeBookFromUI(isbn) {
-    var bookId = 'book-' + encodeURIComponent(isbn); // Construye el ID del libro basado en el ISBN
+    var bookId = 'book-' + encodeURIComponent(isbn);
     var bookElement = document.getElementById(bookId);
     if (bookElement) {
-        bookElement.parentNode.removeChild(bookElement); // Elimina el libro de la UI
+        bookElement.parentNode.removeChild(bookElement); 
     } else {
         console.error('Failed to find the book element in UI:', isbn);
     }
@@ -386,16 +383,13 @@ function deleteBook(isbn) {
     })
     .then(message => {
         console.log('Book deleted:', message);
-        removeBookFromUI(isbn); // Llama a la función para eliminar el libro de la UI
+        removeBookFromUI(isbn); 
     })
     .catch(error => {
         console.error('Error deleting book:', error);
         document.getElementById('errorDisplay').textContent = 'Error deleting book: ' + error.message;
     });
 }
-
-
-
 
 
 // --> INSERTAR LIBRO
@@ -440,7 +434,6 @@ function insertBook() {
     })
     .then(data => {
         console.log('Book inserted correctly:', data);
-        // Aquí puedes llamar a cualquier función para refrescar la lista de libros o actualizar la UI
     })
     .catch(error => {
         console.error('Error inserting book:', error);
@@ -449,12 +442,37 @@ function insertBook() {
 }
 
 
-    
+document.getElementById('updateBookButton').addEventListener('click', function() {
+    const bookTitle = document.getElementById('updateBookTitleInput').value.trim();
+    const bookIsbn = document.getElementById('updateBookIsbnInput').value.trim();
 
+    if (!bookTitle || !bookIsbn) {
+        console.error("Please fill in all fields.");
+        document.getElementById('errorDisplay').textContent = "Please fill in all fields.";
+        return;
+    }
 
-
-
-
+    const bookData = { titulo: bookTitle };
+    fetch(`http://localhost:8000/books/${encodeURIComponent(bookIsbn)}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(bookData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update the book');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Book updated:', data);
+    })
+    .catch(error => {
+        console.error('Error updating book:', error);
+        document.getElementById('errorDisplay').textContent = 'Error updating book: ' + error.message;
+    });
+});
+   
 
 
 
@@ -559,6 +577,38 @@ function insertEdition() {
     });
 }
 
+document.getElementById('updateEditionButton').addEventListener('click', function() {
+    const isbn = document.getElementById('updateEditionIsbnInput').value.trim();
+    const year = parseInt(document.getElementById('updateEditionYearInput').value.trim(), 10);
+    const language = document.getElementById('updateEditionLanguageInput').value.trim();
+
+    if (!isbn || isNaN(year) || !language) {
+        console.error("Please fill in all fields correctly.");
+        document.getElementById('errorDisplay').textContent = "Please fill in all fields correctly.";
+        return;
+    }
+
+    const editionData = { isbn, year, language }; 
+
+    fetch(`http://localhost:8000/editions/${encodeURIComponent(isbn)}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(editionData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update the edition');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Edition updated:', data);
+    })
+    .catch(error => {
+        console.error('Error updating edition:', error);
+        document.getElementById('errorDisplay').textContent = 'Error updating edition: ' + error.message;
+    });
+});
 
 
 // <-------------------------------- FUNCIONES COPIA -------------------------------->
@@ -713,6 +763,45 @@ function removeCopyFromUI(copyNumber) {
     }
 }
 
+
+document.getElementById('updateCopyButton').addEventListener('click', function() {
+    const isbn = document.getElementById('updateCopyIsbnInput').value.trim();
+    const copyNumber = document.getElementById('updateCopyNumberInput').value;
+
+    if (!isbn || !copyNumber) {
+        console.error("Please fill in all fields.");
+        document.getElementById('errorDisplay').textContent = "Please fill in all fields.";
+        return;
+    }
+
+    const copyData = {
+        isbn: isbn,
+        numero: copyNumber
+    };
+
+    fetch(`http://localhost:8000/copies/${encodeURIComponent(isbn)}/${encodeURIComponent(copyNumber)}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(copyData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update the copy');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Copy updated:', data);
+        // Refresh the list of copies or update UI here
+    })
+    .catch(error => {
+        console.error('Error updating copy:', error);
+        document.getElementById('errorDisplay').textContent = 'Error updating copy: ' + error.message;
+    });
+});
+
+
+
 // <-------------------------> FUNCIONES PRESTAMOS <----------------------->
 
 // Función para alternar la visualización de todos los préstamos
@@ -817,10 +906,6 @@ function insertLoan() {
 
 
 
-
-
-
-
 // <-------------------------> FUNCIONES USUARIOS <----------------------->
 
 // Función para alternar la visualización de todos los usuarios
@@ -859,22 +944,21 @@ function showAllUsers() {
             document.getElementById('errorDisplay').textContent = 'Error fetching users: ' + error.message;
         });
 }
+
 // ---> Insertar usuario
 document.getElementById('insertUserButton').addEventListener('click', function() {
     insertUser();
 });
 
 function insertUser() {
-    const userNameInput = document.getElementById('userNameInput').value; 
-    const userRUTInput = document.getElementById('userRUTInput').value; 
+    const userNameInput = document.getElementById('userNameInput');
+    const userRutInput = document.getElementById('userRutInput');
 
-    if (!userNameInput || !userRUTInput) {
+    if (!userNameInput || !userRutInput) {
         console.error('Input fields not found.');
         document.getElementById('errorDisplay').textContent = 'Input fields not found.';
         return;
     }
-
-    console.log("Debug: userNameInput found", userNameInput); 
 
     const userName = userNameInput.value.trim();
     const userRut = userRutInput.value.trim();
@@ -885,31 +969,18 @@ function insertUser() {
         return;
     }
 
-    console.log("Inserting user:", userName, "with RUT:", userRut);
     const userData = { name: userName, rut: userRut };
-
     fetch('http://localhost:8000/users', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(userData)
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok: ' + response.statusText);
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('User inserted correctly:', data);
-        // Aquí puedes llamar a cualquier función para refrescar la lista de usuarios o actualizar la UI
-    })
+    .then(handleResponse)
     .catch(error => {
         console.error('Error inserting user:', error);
         document.getElementById('errorDisplay').textContent = 'Error inserting user: ' + error.message;
     });
 }
-
-
 
 
 // Borrar un usuario
@@ -933,3 +1004,38 @@ function deleteUser(rut) {
         document.getElementById('errorDisplay').textContent = `Error deleting user: ${error.message}`;
     });
 }
+
+
+// ACTUALIZAR USUARIO
+document.getElementById('updateUserButton').addEventListener('click', function() {
+    const userName = document.getElementById('updateUserNameInput').value.trim();
+    const userRut = document.getElementById('updateUserRutInput').value.trim();
+
+    if (!userName || !userRut) {
+        console.error("Please fill in all fields.");
+        document.getElementById('errorDisplay').textContent = "Please fill in all fields.";
+        return;
+    }
+
+    const userData = { nombre: userName };
+    fetch(`http://localhost:8000/users/${encodeURIComponent(userRut)}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(userData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update the user');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('User updated:', data);
+        // Refresh the user list or update UI here
+    })
+    .catch(error => {
+        console.error('Error updating user:', error);
+        document.getElementById('errorDisplay').textContent = 'Error updating user: ' + error.message;
+    });
+});
+
