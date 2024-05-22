@@ -99,17 +99,24 @@ function displayBookCopies(data) {
 
 
 // ---> QUERY 2
-let lastUserSearch = ''; 
+let lastUserSearch = '';
 
 document.getElementById('showLoansByUserButton').addEventListener('click', function() {
-    const userName = document.getElementById('userNameInput').value.trim();
+    const userName = document.getElementById('userNameUserInput').value.trim();
     const container = document.getElementById('loansList');
-    
+    const errorDisplay = document.getElementById('errorDisplay');
+
+    if (!userName) {
+        alert('Por favor ingrese el nombre del usuario');
+        return;
+    }
+
     if (container.style.display === 'block' && lastUserSearch === userName) {
         container.style.display = 'none';
-        container.innerHTML = ''; 
+        container.innerHTML = '';
+        errorDisplay.textContent = '';
     } else {
-        lastUserSearch = userName; 
+        lastUserSearch = userName;
         container.style.display = 'block';
         fetchLoansByUser(userName);
     }
@@ -119,18 +126,32 @@ function fetchLoansByUser(userName) {
     fetch(`http://localhost:8000/query2/${encodeURIComponent(userName)}`)
         .then(response => {
             if (!response.ok) {
-                throw new Error('Failed to fetch book copies');
+                if (response.status === 404) {
+                    throw new Error('Usuario no encontrado en la base de datos');
+                } else {
+                    throw new Error('Failed to fetch book copies');
+                }
             }
             return response.json();
         })
         .then(data => {
-            console.log("Datos recibidos:", data);  
+            console.log("Datos recibidos:", data);
+            const container = document.getElementById('loansList');
+            const errorDisplay = document.getElementById('errorDisplay');
+            if (data.length > 0) {
+                container.innerHTML = data.map(book => `<p>${book.libro} (prestamos: ${book.prestamos})</p>`).join('');
+                errorDisplay.textContent = '';
+            } else {
+                container.innerHTML = '<p>No se encontraron préstamos para este usuario.</p>';
+                errorDisplay.textContent = '';
+            }
         })
         .catch(error => {
             console.error('Error fetching loans:', error);
             document.getElementById('errorDisplay').textContent = 'Error fetching loans: ' + error.message;
         });
 }
+
 
 function displayLoans(data) {
     const container = document.getElementById('loansList');
@@ -155,11 +176,17 @@ function displayLoans(data) {
 
 
 // <------------------------------> FUNCIONES AUTORES <------------------------------> 
-
+// showAllAuthorsButton
 // ---> MOSTRAR AUTORES
+
 function showAllAuthors() {
     fetch('http://localhost:8000/authors')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error fetching authors: ' + response.statusText);
+            }
+            return response.json();
+        })
         .then(authors => {
             const authorsList = document.getElementById('authorsList');
             authorsList.innerHTML = '';
@@ -167,13 +194,22 @@ function showAllAuthors() {
                 const authorElement = document.createElement('div');
                 authorElement.id = 'author-' + encodeURIComponent(author.nombre);
                 authorElement.textContent = author.nombre;
+
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Editar';
+                editButton.className = 'edit-author-btn';
+                editButton.onclick = () => editAuthor(author._id, author.nombre);
+                authorElement.appendChild(editButton);
+
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = 'Borrar';
-                deleteButton.className = 'delete-author-btn'
+                deleteButton.className = 'delete-author-btn';
                 deleteButton.onclick = () => deleteAuthor(author.nombre);
                 authorElement.appendChild(deleteButton);
+
                 authorsList.appendChild(authorElement);
             });
+            authorsList.style.display = 'block';
         })
         .catch(error => {
             console.error('Error fetching authors:', error);
@@ -181,30 +217,57 @@ function showAllAuthors() {
         });
 }
 
-
-function displayAuthorsDetails(authors) {
-    const authorsList = document.getElementById('authorsList');
-    authorsList.innerHTML = ''; 
-    authors.forEach(author => {
-        const authorElement = document.createElement('div');
-        authorElement.textContent = `Nombre: ${author.nombre}`;
-        authorsList.appendChild(authorElement);
-    });
+function editAuthor(authorId, authorName) {
+    currentAuthorId = authorId;
+    document.getElementById('authorNameInput').value = authorName;
+    document.getElementById('insertAuthorButton').style.display = 'none';
+    document.getElementById('updateAuthorButton').style.display = 'inline-block';
 }
 
+document.getElementById('edit-author-btn').addEventListener('click', function() {
+    const authorName = document.getElementById('authorNameInput').value.trim();
 
-function toggleAllAuthorsDisplay() {
-    const container = document.getElementById('authorsList');
-    if (container.style.display === 'block') {
-        container.style.display = 'none';  
-    } else {
-        container.style.display = 'block'; 
-        showAllAuthors(); 
+    if (!authorName) {
+        console.error("Please fill in all fields.");
+        document.getElementById('errorDisplay').textContent = "Please fill in all fields.";
+        return;
     }
-}
+
+    const authorData = { nombre: authorName };
+    fetch(`http://localhost:8000/authors/${encodeURIComponent(currentAuthorId)}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(authorData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update the author');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Author updated:', data);
+        document.getElementById('statusDisplay').textContent = 'Author updated successfully';
+        showAllAuthors();
+    })
+    .catch(error => {
+        console.error('Error updating author:', error);
+        document.getElementById('errorDisplay').textContent = 'Error updating author: ' + error.message;
+    });
+
+    document.getElementById('insertAuthorButton').style.display = 'inline-block';
+    document.getElementById('updateAuthorButton').style.display = 'none';
+    document.getElementById('authorNameInput').value = '';
+});
 
 
-// --> BORRAR AUTOR
+document.getElementById('actualizarAutorBtn').addEventListener('click', function() {
+    const authorName = document.getElementById('authorNameInput').value; 
+    const newAuthorDetails = { nombre: authorName };
+    updateAuthor(authorName, newAuthorDetails);
+});
+
+
 function deleteAuthor(authorName) {
     const url = `http://localhost:8000/authors/${encodeURIComponent(authorName)}`;
     fetch(url, {
@@ -220,30 +283,6 @@ function deleteAuthor(authorName) {
         document.getElementById('errorDisplay').textContent = 'Error borrando autor: ' + error.message;
     });
 }
-
-// --> BORRAR AUTOR DE LA PAGINA WEB
-function removeAuthorFromUI(authorName) {
-    var authorId = 'author-' + encodeURIComponent(authorName);
-    var authorElement = document.getElementById(authorId);
-    if (authorElement) {
-        authorElement.parentNode.removeChild(authorElement);
-    }
-}
-
-// --> MANEJAR ERRORES - AUTORES
-function handleResponse(response) {
-    if (!response.ok) {
-        throw new Error('Network response was not ok: ' + response.status + ' ' + response.statusText);
-    }
-    return response.json();
-}
-
-
-// --> INSERTAR AUTOR
-document.getElementById('insertAuthorButton').addEventListener('click', function() {
-    insertAuthor();
-});
-
 
 function insertAuthor() {
     const authorName = document.getElementById('authorNameInput').value;
@@ -274,82 +313,235 @@ function insertAuthor() {
     });
 }
 
+document.getElementById('insertAuthorButton').addEventListener('click', insertAuthor);
 
-// Event listener para el botón de actualizar autor
-document.getElementById('actualizarAutorBtn').addEventListener('click', function() {
-    const authorName = document.getElementById('authorNameInput').value; 
-    const newAuthorDetails = {
-        nombre: authorName,
+// ---> EDITAR AUTOR
+let currentAuthorId = null;
 
-    };
 
-    updateAuthor(authorName, newAuthorDetails);
+
+function toggleAllAuthorsDisplay() {
+    const container = document.getElementById('authorList');
+    if (container.style.display === 'block') {
+        container.style.display = 'none';  
+    } else {
+        container.style.display = 'block'; 
+        showAllAuthors(); 
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('showAllAuthorsButton').addEventListener('click', showAllAuthors);
 });
 
-function updateAuthor(name, details) {
-    fetch(`http://localhost:8000/authors/${encodeURIComponent(name)}`, {
+
+
+// <------------------------------> FUNCIONES AUTORES <------------------------------> 
+// showAllAuthorsButton
+// ---> MOSTRAR AUTORES
+
+function showAllAuthors() {
+    fetch('http://localhost:8000/authors')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error fetching authors: ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(authors => {
+            const authorsList = document.getElementById('authorsList');
+            authorsList.innerHTML = '';
+            authors.forEach(author => {
+                const authorElement = document.createElement('div');
+                authorElement.id = 'author-' + encodeURIComponent(author.nombre);
+                authorElement.textContent = author.nombre;
+
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Editar';
+                editButton.className = 'edit-author-btn';
+                editButton.onclick = () => editAuthor(author._id, author.nombre);
+                authorElement.appendChild(editButton);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Borrar';
+                deleteButton.className = 'delete-author-btn';
+                deleteButton.onclick = () => deleteAuthor(author.nombre);
+                authorElement.appendChild(deleteButton);
+
+                authorsList.appendChild(authorElement);
+            });
+            authorsList.style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error fetching authors:', error);
+            document.getElementById('errorDisplay').textContent = 'Error fetching authors: ' + error.message;
+        });
+}
+
+function editAuthor(authorId, authorName) {
+    currentAuthorId = authorId;
+    document.getElementById('authorNameInput').value = authorName;
+    document.getElementById('insertAuthorButton').style.display = 'none';
+    document.getElementById('updateAuthorButton').style.display = 'inline-block';
+}
+
+document.getElementById('updateAuthorButton').addEventListener('click', function() {
+    const authorName = document.getElementById('authorNameInput').value.trim();
+
+    if (!authorName) {
+        console.error("Please fill in all fields.");
+        document.getElementById('errorDisplay').textContent = "Please fill in all fields.";
+        return;
+    }
+
+    const authorData = { nombre: authorName };
+    fetch(`http://localhost:8000/authors/${encodeURIComponent(currentAuthorId)}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(details)
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(authorData)
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            throw new Error('Failed to update the author');
         }
         return response.json();
     })
-    .then(updatedAuthor => {
-        console.log('Author updated:', updatedAuthor);
+    .then(data => {
+        console.log('Author updated:', data);
         document.getElementById('statusDisplay').textContent = 'Author updated successfully';
+        showAllAuthors();
     })
     .catch(error => {
         console.error('Error updating author:', error);
         document.getElementById('errorDisplay').textContent = 'Error updating author: ' + error.message;
     });
+
+    document.getElementById('insertAuthorButton').style.display = 'inline-block';
+    document.getElementById('updateAuthorButton').style.display = 'none';
+    document.getElementById('authorNameInput').value = '';
+});
+
+
+document.getElementById('actualizarAutorBtn').addEventListener('click', function() {
+    const authorName = document.getElementById('authorNameInput').value; 
+    const newAuthorDetails = { nombre: authorName };
+    updateAuthor(authorName, newAuthorDetails);
+});
+
+
+function deleteAuthor(authorName) {
+    const url = `http://localhost:8000/authors/${encodeURIComponent(authorName)}`;
+    fetch(url, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Autor borrado:', data);
+        showAllAuthors();
+    })
+    .catch(error => {
+        console.error('Error borrando autor:', error);
+        document.getElementById('errorDisplay').textContent = 'Error borrando autor: ' + error.message;
+    });
 }
 
+function insertAuthor() {
+    const authorName = document.getElementById('authorNameInput').value;
+    if (!authorName) {
+        console.error("Author name input is empty.");
+        return;
+    }
+    console.log("Inserting author:", authorName);
+    const authorData = { nombre: authorName };
+    fetch('http://localhost:8000/authors', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(authorData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok: ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Author inserted correctly:', data);
+        showAllAuthors(); 
+    })
+    .catch(error => {
+        console.error('Error inserting author:', error);
+        document.getElementById('errorDisplay').textContent = 'Error inserting author: ' + error.message;
+    });
+}
+
+document.getElementById('insertAuthorButton').addEventListener('click', insertAuthor);
+
+// ---> EDITAR AUTOR
+//let currentAuthorId = null;
+
+// ---> MOSTRAR / OCULTAR LISTA DE AUTORES
+function toggleAllAuthorsDisplay() {
+    const container = document.getElementById('authorsList');
+    if (container.style.display === 'block') {
+        container.style.display = 'none';  
+    } else {
+        showAllAuthors(); 
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('showAllAuthorsButton').addEventListener('click', toggleAllAuthorsDisplay);
+});
 
 
-
-// <----------------------------------> FUNCIONES LIBROS <----------------------------------> 
-
-// Función para alternar la visualización de todos los libros
-function toggleAllBooksDisplay() {
-    const container = document.getElementById('booksList');
+function toggleAllAuthorsDisplay() {
+    const container = document.getElementById('authorsList'); // Cambiado a 'authorsList'
     if (container.style.display === 'block') {
         container.style.display = 'none';  
     } else {
         container.style.display = 'block'; 
-        showAllBooks(); 
+        showAllAuthors(); 
     }
 }
 
-
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('showAllBooksButton').addEventListener('click', showAllBooks);
+    document.getElementById('showAllAuthorsButton').addEventListener('click', toggleAllAuthorsDisplay); // Cambiado a toggleAllAuthorsDisplay
 });
+
 
 
 // ---> MOSTRAR LIBROS
 function showAllBooks() {
     fetch('http://localhost:8000/books')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error fetching books: ' + response.statusText);
+            }
+            return response.json();
+        })
         .then(books => {
             const booksList = document.getElementById('booksList');
-            booksList.innerHTML = ''; 
+            booksList.innerHTML = '';
             books.forEach(book => {
                 const bookElement = document.createElement('div');
-                bookElement.className = 'book-entry';
-                bookElement.setAttribute('data-title', book.titulo); 
-                bookElement.innerHTML = `
-                    <div><strong>Título:</strong> ${book.titulo}</div>
-                    <div><strong>ISBN:</strong> ${book.isbn}</div>
-                    <button onclick="deleteBook('${book.isbn}', '${book.titulo}')">Borrar</button>
-                `;
+                bookElement.id = 'book-' + encodeURIComponent(book.isbn);
+                bookElement.textContent = `${book.titulo} (ISBN: ${book.isbn})`;
+
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Editar';
+                editButton.className = 'edit-book-btn';
+                editButton.onclick = () => editBook(book._id, book.titulo, book.isbn);
+                bookElement.appendChild(editButton);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Borrar';
+                deleteButton.className = 'delete-book-btn';
+                deleteButton.onclick = () => deleteBook(book.isbn);
+                bookElement.appendChild(deleteButton);
+
                 booksList.appendChild(bookElement);
             });
+            booksList.style.display = 'block';
         })
         .catch(error => {
             console.error('Error fetching books:', error);
@@ -357,40 +549,71 @@ function showAllBooks() {
         });
 }
 
+// ---> EDITAR LIBRO
+let currentBookId = null; // Definir la variable antes de usarla
 
-
-// Función para eliminar un libro de la interfaz de usuario usando el ISBN
-function removeBookFromUI(isbn) {
-    var bookId = 'book-' + encodeURIComponent(isbn);
-    var bookElement = document.getElementById(bookId);
-    if (bookElement) {
-        bookElement.parentNode.removeChild(bookElement); 
-    } else {
-        console.error('Failed to find the book element in UI:', isbn);
-    }
+// Función para editar un libro
+function editBook(bookId, bookTitle, bookIsbn) {
+    currentBookId = bookId;
+    document.getElementById('updateBookTitleInput').value = bookTitle;
+    document.getElementById('updateBookIsbnInput').value = bookIsbn;
+    document.getElementById('insertBookButton').style.display = 'none';
+    document.getElementById('updateBookButton').style.display = 'inline-block';
 }
 
-// Función para eliminar un libro haciendo una petición al servidor
-function deleteBook(isbn) {
-    fetch(`http://localhost:8000/books/${encodeURIComponent(isbn)}`, {
-        method: 'DELETE'
+// Función para guardar cambios de un libro
+function saveBookChanges() {
+    const newTitle = document.getElementById('updateBookTitleInput').value;
+    const newIsbn = document.getElementById('updateBookIsbnInput').value;
+    if (!newTitle || !newIsbn) {
+        console.error("New book title or ISBN input is empty.");
+        return;
+    }
+    const url = `http://localhost:8000/books/${encodeURIComponent(currentBookId)}`;
+    const updatedData = { titulo: newTitle, isbn: newIsbn };
+    fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedData)
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Failed to delete the book: ' + response.statusText);
+            throw new Error('Network response was not ok: ' + response.statusText);
         }
-        return response.text();
+        return response.json();
     })
-    .then(message => {
-        console.log('Book deleted:', message);
-        removeBookFromUI(isbn); 
+    .then(data => {
+        console.log('Book updated successfully:', data);
+        document.getElementById('statusDisplay').textContent = 'Book updated successfully';
+        showAllBooks();
     })
     .catch(error => {
-        console.error('Error deleting book:', error);
-        document.getElementById('errorDisplay').textContent = 'Error deleting book: ' + error.message;
+        console.error('Error updating book:', error);
+        document.getElementById('errorDisplay').textContent = 'Error updating book: ' + error.message;
     });
+
+    document.getElementById('insertBookButton').style.display = 'inline-block';
+    document.getElementById('updateBookButton').style.display = 'none';
+    document.getElementById('updateBookTitleInput').value = '';
+    document.getElementById('updateBookIsbnInput').value = '';
 }
 
+document.getElementById('updateBookButton').addEventListener('click', saveBookChanges);
+
+function toggleAllBooksDisplay() {
+    const container = document.getElementById('booksList');
+    if (container.style.display === 'block') {
+        container.style.display = 'none';  
+    } else {
+        showAllBooks();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('showAllBooksButton').addEventListener('click', toggleAllBooksDisplay);
+});
 
 // --> INSERTAR LIBRO
 document.addEventListener('DOMContentLoaded', function() {
@@ -434,6 +657,7 @@ function insertBook() {
     })
     .then(data => {
         console.log('Book inserted correctly:', data);
+        showAllBooks();
     })
     .catch(error => {
         console.error('Error inserting book:', error);
@@ -441,38 +665,38 @@ function insertBook() {
     });
 }
 
-
-document.getElementById('updateBookButton').addEventListener('click', function() {
-    const bookTitle = document.getElementById('updateBookTitleInput').value.trim();
-    const bookIsbn = document.getElementById('updateBookIsbnInput').value.trim();
-
-    if (!bookTitle || !bookIsbn) {
-        console.error("Please fill in all fields.");
-        document.getElementById('errorDisplay').textContent = "Please fill in all fields.";
-        return;
-    }
-
-    const bookData = { titulo: bookTitle };
-    fetch(`http://localhost:8000/books/${encodeURIComponent(bookIsbn)}`, {
-        method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(bookData)
+// ---> ELIMINAR LIBRO
+function deleteBook(bookIsbn) {
+    const url = `http://localhost:8000/books/${encodeURIComponent(bookIsbn)}`;
+    fetch(url, {
+        method: 'DELETE'
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Failed to update the book');
+            throw new Error('Error deleting book: ' + response.statusText);
         }
         return response.json();
     })
     .then(data => {
-        console.log('Book updated:', data);
+        console.log('Book deleted:', data);
+        removeBookFromUI(bookIsbn);
     })
     .catch(error => {
-        console.error('Error updating book:', error);
-        document.getElementById('errorDisplay').textContent = 'Error updating book: ' + error.message;
+        console.error('Error deleting book:', error);
+        document.getElementById('errorDisplay').textContent = 'Error deleting book: ' + error.message;
     });
-});
-   
+}
+
+function removeBookFromUI(bookIsbn) {
+    const bookId = 'book-' + encodeURIComponent(bookIsbn);
+    const bookElement = document.getElementById(bookId);
+    if (bookElement) {
+        bookElement.parentNode.removeChild(bookElement);
+        console.log('Book element removed from UI:', bookId);
+    } else {
+        console.error('Failed to find the book element in UI:', bookId);
+    }
+}
 
 
 
@@ -501,11 +725,19 @@ function showAllEditions() {
                 const editionElement = document.createElement('div');
                 editionElement.id = 'edition-' + encodeURIComponent(edition.isbn);
                 editionElement.textContent = `ISBN: ${edition.isbn}, Año: ${edition.anyo}, Idioma: ${edition.idioma}`;
+
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Editar';
+                editButton.className = 'edit-edition-btn';
+                editButton.onclick = () => editEdition(edition.isbn, edition.anyo, edition.idioma);
+                editionElement.appendChild(editButton);
+
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = 'Borrar';
-                deleteButton.className = 'delete-edition-btn'
+                deleteButton.className = 'delete-edition-btn';
                 deleteButton.onclick = () => deleteEdition(edition.isbn);
                 editionElement.appendChild(deleteButton);
+
                 editionsList.appendChild(editionElement);
             });
         })
@@ -515,6 +747,59 @@ function showAllEditions() {
         });
 }
 
+
+// ---> EDITAR EDICIÓN
+let currentEditionId = null;
+
+function editEdition(isbn, year, language) {
+    currentEditionId = isbn;
+    document.getElementById('editionIsbnInput').value = isbn;
+    document.getElementById('yearInput').value = year;
+    document.getElementById('languageInput').value = language;
+    document.getElementById('insertEditionButton').style.display = 'none';
+    document.getElementById('updateEditionButton').style.display = 'inline-block';
+}
+
+document.getElementById('updateEditionButton').addEventListener('click', function() {
+    const isbn = document.getElementById('editionIsbnInput').value.trim();
+    const year = parseInt(document.getElementById('yearInput').value.trim(), 10);
+    const language = document.getElementById('languageInput').value.trim();
+
+    if (!isbn || isNaN(year) || !language) {
+        console.error("Please fill in all fields correctly.");
+        document.getElementById('errorDisplay').textContent = "Please fill in all fields correctly.";
+        return;
+    }
+
+    const editionData = { isbn, anyo: year, idioma: language };
+
+    fetch(`http://localhost:8000/editions/${encodeURIComponent(currentEditionId)}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(editionData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update the edition');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Edition updated:', data);
+        document.getElementById('statusDisplay').textContent = 'Edition updated successfully';
+        showAllEditions();
+    })
+    .catch(error => {
+        console.error('Error updating edition:', error);
+        document.getElementById('errorDisplay').textContent = 'Error updating edition: ' + error.message;
+    });
+
+    document.getElementById('insertEditionButton').style.display = 'inline-block';
+    document.getElementById('updateEditionButton').style.display = 'none';
+    document.getElementById('editionIsbnInput').value = '';
+    document.getElementById('yearInput').value = '';
+    document.getElementById('languageInput').value = '';
+});
 
 // --> BORRAR EDICION
 function deleteEdition(isbn) {
@@ -611,6 +896,7 @@ document.getElementById('updateEditionButton').addEventListener('click', functio
 });
 
 
+
 // <-------------------------------- FUNCIONES COPIA -------------------------------->
 
 // Función para alternar la visualización de todas las copias
@@ -629,17 +915,25 @@ function showAllCopies() {
     fetch('http://localhost:8000/copies')
         .then(response => response.json())
         .then(copies => {
-            const copiesList = document.getElementById('copyList'); 
-            copiesList.innerHTML = ''; 
+            const copiesList = document.getElementById('copyList');
+            copiesList.innerHTML = '';
             copies.forEach(copy => {
                 const copyElement = document.createElement('div');
                 copyElement.id = `copy-${copy.isbn}-${copy.numero}`;
                 copyElement.textContent = `Copy No: ${copy.numero}, ISBN: ${copy.isbn}`;
+
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Editar';
+                editButton.className = 'edit-copy-btn';
+                editButton.onclick = () => editCopy(copy.isbn, copy.numero);
+                copyElement.appendChild(editButton);
+
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = 'Borrar';
                 deleteButton.className = 'delete-copy-btn';
                 deleteButton.onclick = () => deleteCopy(copy.isbn, copy.numero);
                 copyElement.appendChild(deleteButton);
+
                 copiesList.appendChild(copyElement);
             });
         })
@@ -649,6 +943,7 @@ function showAllCopies() {
         });
 }
 
+
 // --> BORRAR COPIA
 function deleteCopy(isbn, copyNumber) {
     const url = `http://localhost:8000/copies/${encodeURIComponent(isbn)}/${encodeURIComponent(copyNumber)}`;
@@ -657,27 +952,83 @@ function deleteCopy(isbn, copyNumber) {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error(`Failed to delete the copy: ${response.statusText}`);
+            throw new Error('Failed to delete the copy: ' + response.statusText);
         }
-        return response.text();
+        return response.json();
     })
-    .then(message => {
-        console.log('Copy deleted:', message);
-        removeCopyFromUI(copyNumber); 
+    .then(data => {
+        console.log('Copy deleted:', data);
+        removeCopyFromUI(isbn, copyNumber);
     })
     .catch(error => {
         console.error('Error deleting copy:', error);
-        document.getElementById('errorDisplay').textContent = `Error deleting copy: ${error.message}`;
+        document.getElementById('errorDisplay').textContent = 'Error deleting copy: ' + error.message;
     });
 }
 
-function removeCopyFromUI(copyNumber) {
-    var copyId = 'copy-' + encodeURIComponent(copyNumber);
-    var copyElement = document.getElementById(copyId);
+function removeCopyFromUI(isbn, copyNumber) {
+    const copyId = `copy-${encodeURIComponent(isbn)}-${encodeURIComponent(copyNumber)}`;
+    const copyElement = document.getElementById(copyId);
     if (copyElement) {
         copyElement.parentNode.removeChild(copyElement);
+        console.log('Copy element removed from UI:', copyId);
+    } else {
+        console.error('Failed to find the copy element in UI:', copyId);
     }
 }
+
+
+// ---> EDITAR COPIA
+let currentCopyId = null;
+
+function editCopy(isbn, number) {
+    currentCopyId = { isbn, number };
+    document.getElementById('copyIsbnInput').value = isbn;
+    document.getElementById('copyNumberInput').value = number;
+    document.getElementById('insertCopyButton').style.display = 'none';
+    document.getElementById('updateCopyButton').style.display = 'inline-block';
+}
+
+document.getElementById('updateCopyButton').addEventListener('click', function() {
+    const isbn = document.getElementById('copyIsbnInput').value.trim();
+    const number = parseInt(document.getElementById('copyNumberInput').value.trim(), 10);
+
+    if (!isbn || isNaN(number)) {
+        console.error("Please fill in all fields.");
+        document.getElementById('errorDisplay').textContent = "Please fill in all fields.";
+        return;
+    }
+
+    const copyData = { isbn, numero: number };
+
+    fetch(`http://localhost:8000/copies/${encodeURIComponent(currentCopyId.isbn)}/${encodeURIComponent(currentCopyId.number)}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(copyData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update the copy');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Copy updated:', data);
+        document.getElementById('statusDisplay').textContent = 'Copy updated successfully';
+        showAllCopies();
+    })
+    .catch(error => {
+        console.error('Error updating copy:', error);
+        document.getElementById('errorDisplay').textContent = 'Error updating copy: ' + error.message;
+    });
+
+    document.getElementById('insertCopyButton').style.display = 'inline-block';
+    document.getElementById('updateCopyButton').style.display = 'none';
+    document.getElementById('copyIsbnInput').value = '';
+    document.getElementById('copyNumberInput').value = '';
+});
+
+
 
 // --> BORRAR COPIA DE LA PÁGINA WEB
 function removeCopyFromUI(isbn, copyNumber) {
@@ -740,26 +1091,28 @@ function deleteCopy(isbn, copyNumber) {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error(`Failed to delete the copy: ${response.statusText}`);
+            throw new Error('Failed to delete the copy: ' + response.statusText);
         }
-        return response.text();
+        return response.json();
     })
-    .then(message => {
-        console.log('Copy deleted:', message);
-        showAllCopies();  
+    .then(data => {
+        console.log('Copy deleted:', data);
+        removeCopyFromUI(isbn, copyNumber);
     })
     .catch(error => {
         console.error('Error deleting copy:', error);
-        document.getElementById('errorDisplay').textContent = `Error deleting copy: ${error.message}`;
+        document.getElementById('errorDisplay').textContent = 'Error deleting copy: ' + error.message;
     });
 }
 
-// --> BORRAR COPIA DE LA PÁGINA WEB
-function removeCopyFromUI(copyNumber) {
-    var copyId = 'copy-' + encodeURIComponent(copyNumber);
-    var copyElement = document.getElementById(copyId);
+function removeCopyFromUI(isbn, copyNumber) {
+    const copyId = `copy-${encodeURIComponent(isbn)}-${encodeURIComponent(copyNumber)}`;
+    const copyElement = document.getElementById(copyId);
     if (copyElement) {
         copyElement.parentNode.removeChild(copyElement);
+        console.log('Copy element removed from UI:', copyId);
+    } else {
+        console.error('Failed to find the copy element in UI:', copyId);
     }
 }
 
@@ -819,13 +1172,24 @@ function showAllLoans() {
     fetch('http://localhost:8000/loans')
         .then(response => response.json())
         .then(loans => {
-            const loansList = document.getElementById('loanList');
-            loansList.innerHTML = '';
+            const loanList = document.getElementById('loanList');
+            loanList.innerHTML = '';
             loans.forEach(loan => {
                 const loanElement = document.createElement('div');
-                loanElement.id = `loan-${loan.isbn}-${loan.numero}-${loan.rut}`;
                 loanElement.textContent = `ISBN: ${loan.isbn}, Copia: ${loan.numero}, Usuario: ${loan.rut}`;
-                loansList.appendChild(loanElement);
+
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Editar';
+                editButton.className = 'edit-loan-btn';
+                editButton.onclick = () => editLoan(loan.isbn, loan.numero, loan.rut, loan.fecha_pres, loan.fecha_dev);
+                loanElement.appendChild(editButton);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Borrar';
+                deleteButton.onclick = () => deleteLoan(loan.isbn, loan.numero, loan.rut, loanElement);
+
+                loanElement.appendChild(deleteButton);
+                loanList.appendChild(loanElement);
             });
         })
         .catch(error => {
@@ -833,6 +1197,31 @@ function showAllLoans() {
             document.getElementById('errorDisplay').textContent = 'Error fetching loans: ' + error.message;
         });
 }
+
+
+function deleteLoan(isbn, numero, rut, loanElement) {
+    console.log(`Attempting to delete loan with ISBN: ${isbn}, number: ${numero}, RUT: ${rut}`);
+    fetch(`http://localhost:8000/loans/${isbn}/${numero}/${rut}`, {
+        method: 'DELETE'
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {throw new Error('Failed to delete loan: ' + JSON.stringify(err));});
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Loan deleted:', data);
+        document.getElementById('statusDisplay').textContent = 'Loan deleted successfully';
+        loanElement.remove();  
+    })
+    .catch(error => {
+        console.error('Error deleting loan:', error);
+        document.getElementById('errorDisplay').textContent = 'Error deleting loan: ' + error.message;
+    });
+}
+
+
 
 // Insertar un préstamo
 document.addEventListener('DOMContentLoaded', function() {
@@ -844,63 +1233,65 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-    const insertLoanButton = document.getElementById('insertLoanButton');
-    insertLoanButton.addEventListener('click', insertLoan);
-});
 
 function insertLoan() {
-    const isbnInput = document.getElementById('loanIsbnInput');
-    const numberInput = document.getElementById('loanNumberInput');
-    const userRutInput = document.getElementById('loanUserRUTInput');
-    const startDateInput = document.getElementById('loanStartDateInput');
-    const endDateInput = document.getElementById('loanEndDateInput');
+    const loanUserRUTInput = document.getElementById('loanUserRUTInput');
+    const loanBookTitleInput = document.getElementById('loanBookTitleInput');
+    const loanStartDateInput = document.getElementById('loanStartDateInput');
+    const loanEndDateInput = document.getElementById('loanEndDateInput');
 
-    if (!isbnInput || !numberInput || !userRutInput || !startDateInput || !endDateInput) {
-        console.error("One or more input fields are missing.");
-        document.getElementById('errorDisplay').textContent = "All input fields are required.";
+    if (!loanUserRUTInput || !loanBookTitleInput || !loanStartDateInput || !loanEndDateInput) {
+        console.error('One or more input fields are missing.');
+        document.getElementById('errorDisplay').textContent = 'One or more input fields are missing.';
         return;
     }
 
-    const isbn = isbnInput.value.trim();
-    const number = parseInt(numberInput.value, 10);
-    const userRut = userRutInput.value.trim();
-    const startDate = startDateInput.value;
-    const endDate = endDateInput.value;
+    const userRUT = loanUserRUTInput.value.trim();
+    const bookTitle = loanBookTitleInput.value.trim();
+    const startDate = loanStartDateInput.value;
+    const endDate = loanEndDateInput.value;
 
-    if (!isbn || isNaN(number) || !userRut || !startDate || !endDate) {
-        console.error("Please fill in all fields correctly.");
-        document.getElementById('errorDisplay').textContent = "Please fill in all fields correctly.";
+    if (!userRUT || !bookTitle || !startDate || !endDate) {
+        console.error('One or more input fields are empty.');
+        document.getElementById('errorDisplay').textContent = 'One or more input fields are empty.';
         return;
     }
 
     const loanData = {
-        isbn,
-        numero: number,
-        rut: userRut,
-        fechaInicio: startDate,
-        fechaFin: endDate
+        rut: userRUT,
+        isbn: bookTitle,
+        numero: 1,  // Proporciona el número de la copia, si es relevante
+        fecha_pres: startDate,
+        fecha_dev: endDate
     };
+
+    console.log('Sending loan data:', loanData);
 
     fetch('http://localhost:8000/loans', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(loanData)
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error(`Network response was not ok: ${response.statusText}`);
+            return response.json().then(err => {throw new Error('Failed to insert loan: ' + JSON.stringify(err));});
         }
         return response.json();
     })
     .then(data => {
-        console.log('Loan inserted successfully:', data);
+        console.log('Loan inserted:', data);
+        document.getElementById('statusDisplay').textContent = 'Loan inserted successfully';
+        showAllLoans();
     })
     .catch(error => {
         console.error('Error inserting loan:', error);
-        document.getElementById('errorDisplay').textContent = `Error inserting loan: ${error.message}`;
+        document.getElementById('errorDisplay').textContent = 'Error inserting loan: ' + error.message;
     });
 }
+
+
 
 
 
@@ -924,16 +1315,24 @@ function showAllUsers() {
         .then(response => response.json())
         .then(users => {
             const userList = document.getElementById('userList');
-            userList.innerHTML = ''; 
+            userList.innerHTML = '';
             users.forEach(user => {
                 const userElement = document.createElement('div');
                 userElement.id = 'user-' + encodeURIComponent(user.rut);
                 userElement.textContent = `RUT: ${user.rut}, Nombre: ${user.nombre}`;
+
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Editar';
+                editButton.className = 'edit-user-btn';
+                editButton.onclick = () => editUser(user.rut, user.nombre);
+                userElement.appendChild(editButton);
+
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = 'Borrar';
                 deleteButton.className = 'delete-user-btn';
                 deleteButton.onclick = () => deleteUser(user.rut);
                 userElement.appendChild(deleteButton);
+
                 userList.appendChild(userElement);
             });
         })
@@ -943,14 +1342,20 @@ function showAllUsers() {
         });
 }
 
+
 // ---> Insertar usuario
 document.getElementById('insertUserButton').addEventListener('click', function() {
     insertUser();
 });
 
+
 function insertUser() {
     const userNameInput = document.getElementById('userNameInput');
     const userRutInput = document.getElementById('userRutInput');
+
+    // Agregar logs para verificar los valores de los campos de entrada
+    console.log('userNameInput:', userNameInput);
+    console.log('userRutInput:', userRutInput);
 
     if (!userNameInput || !userRutInput) {
         console.error('Input fields not found.');
@@ -961,24 +1366,92 @@ function insertUser() {
     const userName = userNameInput.value.trim();
     const userRut = userRutInput.value.trim();
 
+    console.log('userName:', userName);
+    console.log('userRut:', userRut);
+
     if (!userName || !userRut) {
-        console.error("User name or RUT input is empty.");
-        document.getElementById('errorDisplay').textContent = "Please fill in all fields.";
+        console.error('User name or RUT input is empty.');
+        document.getElementById('errorDisplay').textContent = 'User name or RUT input is empty.';
         return;
     }
 
-    const userData = { name: userName, rut: userRut };
+    const userData = { nombre: userName, rut: userRut };
+
     fetch('http://localhost:8000/users', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(userData)
     })
-    .then(handleResponse)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to insert user: ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('User inserted:', data);
+        document.getElementById('statusDisplay').textContent = 'User inserted successfully';
+        showAllUsers();
+    })
     .catch(error => {
         console.error('Error inserting user:', error);
         document.getElementById('errorDisplay').textContent = 'Error inserting user: ' + error.message;
     });
 }
+
+
+// ---> EDITAR USUARIO
+let currentUserId = null;
+
+function editUser(userRut, userName) {
+    currentUserId = userRut;
+    document.getElementById('userRutInput').value = userRut;
+    document.getElementById('userNameInput').value = userName;
+    document.getElementById('insertUserButton').style.display = 'none';
+    document.getElementById('updateUserButton').style.display = 'inline-block';
+}
+
+document.getElementById('updateUserButton').addEventListener('click', function() {
+    const userRut = document.getElementById('userRutInput').value.trim();
+    const userName = document.getElementById('userNameInput').value.trim();
+
+    if (!userRut || !userName) {
+        console.error("Please fill in all fields.");
+        document.getElementById('errorDisplay').textContent = "Please fill in all fields.";
+        return;
+    }
+
+    const userData = { nombre: userName };
+
+    fetch(`http://localhost:8000/users/${encodeURIComponent(currentUserId)}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(userData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update the user');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('User updated:', data);
+        document.getElementById('statusDisplay').textContent = 'User updated successfully';
+        showAllUsers();
+    })
+    .catch(error => {
+        console.error('Error updating user:', error);
+        document.getElementById('errorDisplay').textContent = 'Error updating user: ' + error.message;
+    });
+
+    document.getElementById('insertUserButton').style.display = 'inline-block';
+    document.getElementById('updateUserButton').style.display = 'none';
+    document.getElementById('userRutInput').value = '';
+    document.getElementById('userNameInput').value = '';
+});
+
 
 
 // Borrar un usuario
@@ -1003,6 +1476,15 @@ function deleteUser(rut) {
     });
 }
 
+function removeUserFromUI(userRut) {
+    const userElement = document.getElementById(`user-${encodeURIComponent(userRut)}`);
+    if (userElement) {
+        userElement.parentNode.removeChild(userElement);
+        console.log('User element removed from UI:', userRut);
+    } else {
+        console.error('Failed to find the user element in UI:', userRut);
+    }
+}
 
 // ACTUALIZAR USUARIO
 document.getElementById('updateUserButton').addEventListener('click', function() {
